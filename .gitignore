@@ -1,0 +1,12 @@
+.DS_Store
+
+# Python
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+
+# Horizons responses and LOLA rasters are re-downloadable; rasters exceed GitHub's file limit.
+pipeline/cache/
+*.tif
+*.TIF

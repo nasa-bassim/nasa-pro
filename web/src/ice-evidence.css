@@ -1,0 +1,10 @@
+.ice-evidence { margin: 1.25rem 0; padding: 1.2rem; border: 1px solid var(--border, #394354); border-radius: 12px; background: rgba(83, 146, 187, .07); }
+.ice-evidence-heading { display: flex; align-items: baseline; flex-wrap: wrap; gap: .5rem 1rem; }
+.ice-evidence h3 { margin: 0; font-size: 1rem; }
+.ice-evidence-heading span { font-size: .75rem; color: var(--muted, #b8c3d4); }
+.ice-evidence p { font-size: .85rem; line-height: 1.6; }
+.ice-evidence .ice-score { margin: .7rem 0; }
+.ice-score strong { font-size: 2rem; font-variant-numeric: tabular-nums; }
+.ice-evidence summary { cursor: pointer; font-size: .85rem; }
+.ice-evidence a { color: inherit; text-decoration: underline; }
+.ice-provenance { overflow-wrap: anywhere; }
