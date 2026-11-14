@@ -1,0 +1,36 @@
+/* 의사결정 도구(가장 유리한 시작 시각, 오차 견고성). Decision.tsx 전용. */
+.optimum { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--rule); font-size: 13px; line-height: 20px; color: var(--muted); word-break: keep-all; }
+.optimum p { margin: 0; }
+.optimum strong { color: var(--text); font-weight: 600; white-space: nowrap; }
+.optimum button { margin-top: 10px; }
+
+.robustness { padding: 20px 0; border-bottom: 1px solid var(--rule); word-break: keep-all; }
+.robustness h3 { margin: 0; font-size: 16px; line-height: 24px; font-weight: 600; }
+.robustness-help, .robustness-note, .robustness-conditions { margin: 4px 0 0; color: var(--muted); font-size: 12px; line-height: 18px; }
+.robustness-verdict { margin: 14px 0 0; padding: 12px 14px; border-radius: 10px; border-left: 3px solid var(--control); background: var(--raised); font-size: 14px; line-height: 22px; font-weight: 500; }
+.robustness-go { border-left-color: #4cc38a; }
+.robustness-caution { border-left-color: var(--sunlit); }
+.robustness-stop { border-left-color: var(--warn); }
+
+.robustness-controls { display: flex; flex-wrap: wrap; gap: 10px 24px; margin-top: 16px; }
+.robustness-controls > div { display: flex; align-items: center; gap: 6px; }
+.robustness-controls span { margin-right: 4px; color: var(--muted); font-size: 12px; }
+.robustness-controls button { min-height: 30px; padding: 0 10px; font-size: 12px; }
+.robustness-controls button[aria-pressed='true'] { background: var(--text); border-color: var(--text); color: #000000; }
+
+.robustness-scroll { margin-top: 14px; overflow-x: auto; }
+.robustness table { width: 100%; border-collapse: collapse; font-size: 12px; line-height: 18px; font-variant-numeric: tabular-nums; }
+.robustness th, .robustness td { padding: 7px 8px; border-bottom: 1px solid var(--rule); text-align: center; white-space: nowrap; }
+.robustness thead th { color: var(--muted); font-weight: 400; }
+.robustness th[scope='row'] { text-align: left; font-weight: 500; }
+.robustness th small { color: var(--muted); font-weight: 400; }
+.robustness td.is-ok { color: #4cc38a; }
+.robustness td.is-fail { color: var(--warn); font-weight: 600; background: rgba(255, 123, 114, 0.08); }
+.robustness td.is-skipped { color: var(--faint); }
+.robustness-conditions { margin-top: 10px; }
+.robustness-action { margin-top: 14px; }
+.robustness-action .warn { margin: 0 0 8px; font-size: 12px; }
+
+/* 지형 가림 반영 스위치 (비교 결과 머리의 범례 옆) */
+.terrain-toggle { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.terrain-toggle input { width: 16px; height: 16px; accent-color: var(--earth); }

@@ -1,0 +1,62 @@
+[
+ {
+  "file": "web/public/img/lunar-south-pole.jpg",
+  "media": "image",
+  "ref": "commons:31697327",
+  "title": "LRO WAC South Pole Mosaic",
+  "creator": "NASA/GSFC/Arizona State University",
+  "creatorUrl": null,
+  "date": "27 September 2010 (release date)",
+  "license": "public domain",
+  "licenseCode": "pd",
+  "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+  "creditRequired": false,
+  "page": "https://commons.wikimedia.org/wiki/File:LRO_WAC_South_Pole_Mosaic.jpg",
+  "via": "Wikimedia Commons",
+  "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/40/LRO_WAC_South_Pole_Mosaic.jpg/1920px-LRO_WAC_South_Pole_Mosaic.jpg",
+  "width": 1920,
+  "height": 1920,
+  "bytes": 956044,
+  "credit": "\"LRO WAC South Pole Mosaic\" by NASA/GSFC/Arizona State University, public domain, via Wikimedia Commons",
+  "notes": [],
+  "saved": "2026-11-14T03:53:50.874Z"
+ },
+ {
+  "media": "image",
+  "creator": "NASA's Scientific Visualization Studio",
+  "license": "public domain",
+  "licenseCode": "pd",
+  "creditRequired": false,
+  "page": "https://svs.gsfc.nasa.gov/4720",
+  "via": "NASA SVS CGI Moon Kit",
+  "saved": "2026-11-14",
+  "file": "web/public/img/moon-surface.jpg",
+  "title": "CGI Moon Kit color map (lroc_color_poles_2k.tif)",
+  "image": "https://svs.gsfc.nasa.gov/vis/a000000/a004700/a004720/lroc_color_poles_2k.tif",
+  "width": 2048,
+  "height": 1024,
+  "notes": [
+   "TIF에서 JPG로 변환"
+  ],
+  "credit": "\"CGI Moon Kit\" by NASA's Scientific Visualization Studio, public domain"
+ },
+ {
+  "media": "image",
+  "creator": "NASA's Scientific Visualization Studio",
+  "license": "public domain",
+  "licenseCode": "pd",
+  "creditRequired": false,
+  "page": "https://svs.gsfc.nasa.gov/4720",
+  "via": "NASA SVS CGI Moon Kit",
+  "saved": "2026-11-14",
+  "file": "web/public/img/moon-relief.jpg",
+  "title": "CGI Moon Kit displacement map (ldem_16_uint.tif)",
+  "image": "https://svs.gsfc.nasa.gov/vis/a000000/a004700/a004720/ldem_16_uint.tif",
+  "width": 2048,
+  "height": 1024,
+  "notes": [
+   "고도에서 동쪽·북쪽 경사를 계산해 R·G에, 고도를 B에 담은 파생 이미지"
+  ],
+  "credit": "\"CGI Moon Kit\" by NASA's Scientific Visualization Studio, public domain"
+ }
+]

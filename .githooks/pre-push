@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# 푸시 전에 프로젝트 검사(scripts/check.sh)를 실행한다.
+set -euo pipefail
+exec "$(git rev-parse --show-toplevel)/scripts/check.sh"
