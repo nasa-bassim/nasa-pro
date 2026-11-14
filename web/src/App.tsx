@@ -929,7 +929,10 @@ export default function App() {
             </div>
           </div>
 
-          <aside className="data-note" aria-label={text.dataNote}>{text.dataNote}</aside>
+          <aside className="data-note" aria-label={text.terrainCaveat}>
+            <span>{text.dataSource}</span>
+            <strong>{text.terrainCaveat}</strong>
+          </aside>
           <button className="view-results primary" onClick={() => setWorkspaceSection('results')}>{text.viewResults}</button>
         </div>
         <Suspense fallback={<MoonLoading language={language} />}>
@@ -983,14 +986,17 @@ export default function App() {
           <div className="board-actions"><button onClick={() => setShowComparison((value) => !value)}>{showComparison ? text.backToDetails : text.compareNumbers}</button></div>
           {showComparison ? (
             <div className="comparison-table" role="region" aria-label={text.compareNumbers}>
-              <div className="table-head"><span>{text.tableSite}</span><span>{text.tablePowerContact}</span><span>{text.tableLongestDark}</span></div>
-              {columns.map((c) => {
+              <div className="table-head"><span>{text.tableSite}</span><span>{text.tablePowerContact}</span><span>{text.tableLongestDark}</span><span>{text.tableRecommendation}</span></div>
+              {columns.map((c, index) => {
                 const site = SITES.find((item) => item.slug === c.site);
                 const key = columnKey(c); const record = key ? data[key] : undefined;
-                if (!record?.sun || !record.earth) return <div className="table-row" key={c.id}><strong>{site?.name ?? text.customSite}</strong><span>{text.calculating}</span><span>–</span></div>;
+                const name = site?.name ?? text.customSite;
+                const label = ko ? `${index + 1}번 ${name}` : `#${index + 1} ${name}`;
+                if (!record?.sun || !record?.earth) return <div className="table-row" key={c.id}><strong>{label}</strong><span>{text.calculating}</span><span>–</span><span>–</span></div>;
                 const tl = timeline(record.sun, record.earth, parseT0Input(c.t0), days);
                 const sunStats = stats(record.sun, parseT0Input(c.t0), days);
-                return <button className="table-row" key={c.id} onClick={() => { setSelectedId(c.id); setShowComparison(false); }}><strong>{site?.name ?? text.customSite}</strong><span>{duration(tl.bothVisibleMs, language)}</span><span>{duration(sunStats.longestDarkHours * HOUR_MS, language)}</span></button>;
+                const recommended = comparisonReady && bestNos.has(index + 1);
+                return <button className={`table-row${recommended ? ' is-recommended' : ''}`} key={c.id} onClick={() => { setSelectedId(c.id); setShowComparison(false); }}><strong>{label}</strong><span>{duration(tl.bothVisibleMs, language)}</span><span>{duration(sunStats.longestDarkHours * HOUR_MS, language)}</span><span className={recommended ? 'table-reason is-best' : 'table-reason'}>{recommended ? text.recommendedReason : text.notRecommendedReason}</span></button>;
               })}
             </div>
           ) : selectedColumn ? (

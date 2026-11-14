@@ -1364,6 +1364,95 @@ button { white-space: nowrap; }
   .recommendation-time { text-align: left; }
 }
 
+/* Mission-planning hierarchy: favor readable decisions over display-style compression. */
+.hero-text .product h1 {
+  letter-spacing: -0.018em;
+}
+html[lang='ko'] .hero-text .product h1 {
+  letter-spacing: -0.025em;
+}
+.recommendation-meta p {
+  display: none;
+}
+.data-note {
+  display: grid;
+  gap: 4px;
+  margin-top: 16px;
+}
+.data-note span {
+  color: #86868b;
+}
+.data-note strong {
+  color: #c7c7cc;
+  font-weight: 500;
+}
+.table-head,
+.table-row {
+  grid-template-columns: minmax(180px, 1.25fr) minmax(105px, .82fr) minmax(105px, .82fr) minmax(150px, 1fr);
+}
+.table-row.is-recommended {
+  background: rgba(41, 151, 255, .10);
+}
+.table-reason {
+  color: #a1a1a6;
+  font-size: 12px;
+  line-height: 1.3;
+}
+.table-reason.is-best {
+  color: #64b5ff;
+  font-weight: 600;
+}
+@media (max-width: 760px) {
+  .hero-text .product h1 {
+    font-size: 27px;
+    letter-spacing: -0.014em;
+  }
+  html[lang='ko'] .hero-text .product h1 {
+    letter-spacing: -0.018em;
+  }
+  .comparison-status {
+    margin-top: 17px;
+    padding: 13px 0 14px;
+  }
+  .recommendation-summary {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px 14px;
+    margin-top: 10px;
+  }
+  .recommendation-candidates > div {
+    margin-top: 5px;
+  }
+  .recommendation-candidates b {
+    min-height: 23px;
+    padding: 0 8px;
+  }
+  .recommendation-time strong {
+    font-size: 24px;
+  }
+  .recommendation-meta {
+    display: block;
+    padding-top: 8px;
+  }
+  .recommendation-meta > span {
+    font-size: 11px;
+  }
+  .data-note {
+    margin-top: 14px;
+    font-size: 11px;
+    line-height: 1.45;
+  }
+  .table-head,
+  .table-row {
+    grid-template-columns: minmax(148px, 1.18fr) minmax(90px, .78fr) minmax(90px, .78fr) minmax(140px, 1fr);
+    min-width: 520px;
+  }
+  .table-row strong,
+  .table-row span {
+    overflow: visible;
+    white-space: normal;
+  }
+}
+
 /* Deferred 3D renderer keeps the shell interactive while three.js loads. */
 .moon-loading {
   display: grid;
