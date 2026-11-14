@@ -1363,3 +1363,32 @@ button { white-space: nowrap; }
   .recommendation-summary { grid-template-columns: 1fr; }
   .recommendation-time { text-align: left; }
 }
+
+/* Deferred 3D renderer keeps the shell interactive while three.js loads. */
+.moon-loading {
+  display: grid;
+  min-height: 360px;
+  place-items: center;
+  border: 1px solid #2c2c2e;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 38% 34%, rgba(255,255,255,.12) 0 2%, transparent 2.5%),
+    radial-gradient(circle at 62% 68%, rgba(255,255,255,.07) 0 1.4%, transparent 2%),
+    radial-gradient(circle at 50% 48%, #3d3d40 0 28%, #242426 50%, #111 72%);
+  color: #a1a1a6;
+  font-size: 13px;
+}
+@media (max-width: 760px) {
+  .moon-loading { min-height: 300px; }
+}
+
+/* Keep the duration control geometry fixed while the active choice changes. */
+.d-preset button {
+  box-sizing: border-box;
+  min-width: 52px;
+  height: 36px;
+  border: 1px solid transparent;
+}
+.d-preset button.active {
+  border-color: transparent;
+}

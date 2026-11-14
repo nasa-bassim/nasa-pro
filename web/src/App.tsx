@@ -1,8 +1,7 @@
 import { comparisonSummary } from './lib/comparison';
 import type { ComparisonColumn } from './lib/comparison';
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, memo, startTransition, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { OptimumStart, Robustness } from './Decision';
 import { DATA_RANGE, DAY_MS, clampT0, formatT0Input, parseT0Input, withHorizon } from './lib/ephemeris';
 import { judge } from './lib/robustness';
 import {
@@ -17,12 +16,25 @@ import type { T0Field } from './lib/t0Field';
 import type { Ephemeris } from './lib/ephemeris';
 import { eventMetric, stats, timeline } from './lib/metrics';
 import { tickStepMs } from './lib/timelineTicks';
-import { Moon3D } from './Moon3D';
 import { SITES } from './sites';
 import { copy, duration } from './i18n';
 import type { Language } from './i18n';
 
 const HOUR_MS = 3600_000;
+
+// three.js and the lunar textures stay out of the first application bundle.
+// The map loads after the workspace shell has become interactive.
+const Moon3D = lazy(() => import('./Moon3D').then(({ Moon3D }) => ({ default: Moon3D })));
+const OptimumStart = lazy(() => import('./Decision').then(({ OptimumStart }) => ({ default: OptimumStart })));
+const Robustness = lazy(() => import('./Decision').then(({ Robustness }) => ({ default: Robustness })));
+
+function MoonLoading({ language }: { language: Language }) {
+  return (
+    <div className="moon moon-loading" role="status" aria-live="polite" aria-label={language === 'ko' ? '3D 달 지도 불러오는 중' : 'Loading 3D Moon map'}>
+      <span>{language === 'ko' ? '3D 달 지도 준비 중' : 'Preparing 3D Moon map'}</span>
+    </div>
+  );
+}
 
 const CUSTOM = 'custom';
 
@@ -129,12 +141,12 @@ const PeriodPicker = memo(function PeriodPicker({
   const visualDays = pendingDays ?? days;
   const choose = (nextDays: number) => {
     if (nextDays === visualDays) return;
+    // Commit the selected pill urgently, then let the duration-wide analysis yield to it.
     setPendingDays(nextDays);
-    // Two frames guarantee the selected fill is painted before metrics begin recalculating.
-    requestAnimationFrame(() => requestAnimationFrame(() => {
+    startTransition(() => {
       onChange(nextDays);
       setPendingDays(null);
-    }));
+    });
   };
   return (
     <span className="d-preset" role="group" aria-label={label}>
@@ -636,7 +648,9 @@ function ColumnBody({
           <span style={{ width: `${overlapPercent}%` }} />
         </div>
         <p className="metric-explanation">{t.powerAndContactHelp}</p>
-        <OptimumStart language={language} sun={sun} earth={earth} days={days} currentMs={tl.bothVisibleMs} onApply={onApplyT0} />
+        <Suspense fallback={null}>
+          <OptimumStart language={language} sun={sun} earth={earth} days={days} currentMs={tl.bothVisibleMs} onApply={onApplyT0} />
+        </Suspense>
       </div>
       <div className={`darkness-summary${sunStats.longestDarkHours > 0 ? ' has-darkness' : ''}`}>
         <span>{t.longestDarkness}</span>
@@ -647,7 +661,9 @@ function ColumnBody({
         <div><span>{t.sunlightTime}</span><strong>{Math.round(sunStats.fraction * 100)}%</strong><div className="mini-track"><i style={{width: `${sunStats.fraction * 100}%`, background: 'var(--sunlit)'}} /></div></div>
         <div><span>{t.earthContactTime}</span><strong>{Math.round(earthStats.fraction * 100)}%</strong><div className="mini-track"><i style={{width: `${earthStats.fraction * 100}%`, background: 'var(--earth)'}} /></div></div>
       </div>
-      <Robustness language={language} lat={lat} lonE={lonE} neighbourHorizons={neighbourHorizons} sun={sun} earth={earth} t0={t0} days={days} />
+      <Suspense fallback={null}>
+        <Robustness language={language} lat={lat} lonE={lonE} neighbourHorizons={neighbourHorizons} sun={sun} earth={earth} t0={t0} days={days} />
+      </Suspense>
       <p className="timeline-heading">{t.timeline} <span>{t.timelineHelp}</span></p>
       <Timelines tl={tl} t0={t0} axisStart={axisStart} axisEnd={axisEnd} language={language} />
       <details className="secondary-metrics">
@@ -772,13 +788,14 @@ export default function App() {
   }).length;
   const comparisonReady = columns.length >= 2 && readyCount === columns.length;
   const canAdd = columns.length < 4;
-  const addColumn = (site: string) =>
+  const addColumn = useCallback((site: string) =>
     setColumns((c) => {
       if (c.length >= 4) return c;
       const added = { id: nextId++, site, t0: '2026-11-14T00:00' };
       setSelectedId(added.id);
       return [...c, added];
-    });
+    }), []);
+  const ignoreMapAdd = useCallback((_site: string) => undefined, []);
   const selectedIndex = Math.max(0, columns.findIndex((c) => c.id === selectedId));
   const selectedColumn = columns[selectedIndex];
   const selectedKey = selectedColumn ? columnKey(selectedColumn) : null;
@@ -824,7 +841,9 @@ export default function App() {
               </div>
             </div>
             <div className="landing-moon-panel">
-              <Moon3D columns={columns} canAdd={false} onAdd={() => undefined} language={language} />
+              <Suspense fallback={<MoonLoading language={language} />}>
+                <Moon3D columns={columns} canAdd={false} onAdd={ignoreMapAdd} language={language} />
+              </Suspense>
               <div className="landing-moon-caption"><span>{text.landingCaption}</span><span>{text.landingExplore}</span></div>
             </div>
           </section>
@@ -913,7 +932,9 @@ export default function App() {
           <aside className="data-note" aria-label={text.dataNote}>{text.dataNote}</aside>
           <button className="view-results primary" onClick={() => setWorkspaceSection('results')}>{text.viewResults}</button>
         </div>
-        <Moon3D columns={columns} canAdd={canAdd} onAdd={addColumn} language={language} />
+        <Suspense fallback={<MoonLoading language={language} />}>
+          <Moon3D columns={columns} canAdd={canAdd} onAdd={addColumn} language={language} />
+        </Suspense>
       </header> : <>
 
       <div className="comparison-heading">

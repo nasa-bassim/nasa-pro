@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent, PointerEvent } from 'react';
 
 import {
@@ -162,7 +162,7 @@ const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t 
 const reducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-export function Moon3D({
+export const Moon3D = memo(function Moon3D({
   columns,
   canAdd,
   onAdd,
@@ -459,4 +459,4 @@ export function Moon3D({
       </div>
     </div>
   );
-}
+});
