@@ -1,3 +1,4 @@
+import { fetchRefinement } from './lib/refinement';
 import { comparisonSummary } from './lib/comparison';
 import type { ComparisonColumn } from './lib/comparison';
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
@@ -70,7 +71,7 @@ async function fetchHorizon(slug: string): Promise<HorizonDoc | undefined> {
     const r = await fetch(`/horizon/${slug}.json`);
     if (!r.ok) return undefined;
     const doc = (await r.json()) as HorizonDoc;
-    return doc.points?.center?.length === 360 ? doc : undefined;
+    return (doc.points?.center?.length ?? 0) >= 360 ? doc : undefined;
   } catch {
     return undefined;
   }
@@ -99,8 +100,9 @@ async function fetchSiteData(key: string): Promise<SiteData> {
       })
     )
   );
+  const [refinedSun, refinedEarth] = key.startsWith('custom:') ? [sun, earth] : await Promise.all([fetchRefinement(sun!), fetchRefinement(earth!)]);
   const horizon = key.startsWith('custom:') ? undefined : await fetchHorizon(key);
-  return { status: 'ok', sun, earth, horizon };
+  return { status: 'ok', sun: refinedSun, earth: refinedEarth, horizon };
 }
 
 const fmtDate = (ms: number) => {
@@ -164,8 +166,8 @@ function MetricCard({ title, value, sub }: { title: string; value: string; sub?:
 }
 
 function TimelineSvg({
-  cells,
-  times,
+  intervals,
+  end,
   rowY,
   color,
   axisStart,
@@ -176,8 +178,8 @@ function TimelineSvg({
   barH,
   cursorY,
 }: {
-  cells: boolean[];
-  times: number[];
+  intervals: { start: number; end: number }[];
+  end: number;
   rowY: number;
   color: string;
   axisStart: number;
@@ -190,17 +192,11 @@ function TimelineSvg({
 }) {
   const W = width;
   const x = (t: number) => ((t - axisStart) / (axisEnd - axisStart)) * W;
-  // 1시간 칸을 따로 그리면 칸 경계마다 안티에일리어싱 줄무늬가 비친다.
-  // 같은 값이 이어지는 칸은 하나의 사각형으로 합쳐 그린다.
-  const runs: { start: number; end: number; v: boolean }[] = [];
-  cells.forEach((v, i) => {
-    const t = times[i]!;
-    const last = runs[runs.length - 1];
-    if (last && last.v === v && last.end === t) last.end = t + HOUR_MS;
-    else runs.push({ start: t, end: t + HOUR_MS, v });
-  });
+  const runs = intervals.map((r) => ({ start: Math.max(t0, r.start), end: Math.min(end, r.end) }))
+    .filter((r) => r.end > r.start);
   return (
     <g>
+      <rect x={x(t0)} y={rowY} width={x(end) - x(t0)} height={barH} fill="var(--dark)" />
       {runs.map((r) => (
         <rect
           key={r.start}
@@ -208,7 +204,7 @@ function TimelineSvg({
           y={rowY}
           width={x(r.end) - x(r.start)}
           height={barH}
-          fill={r.v ? color : 'var(--dark)'}
+          fill={color}
           shapeRendering="crispEdges"
         />
       ))}
@@ -288,8 +284,8 @@ function Timelines({
           <rect x={0} y={sunY} width={W} height={barH} fill="var(--track)" />
           <rect x={0} y={earthY} width={W} height={barH} fill="var(--track)" />
           <TimelineSvg
-            cells={tl.sun.cells}
-            times={tl.sun.times}
+            intervals={tl.sun.intervals}
+            end={tl.sun.start + tl.sun.cells.length * tl.sun.stepMs}
             rowY={sunY}
             color="var(--sunlit)"
             axisStart={axisStart}
@@ -301,8 +297,8 @@ function Timelines({
             cursorY={[0, axisY]}
           />
           <TimelineSvg
-            cells={tl.earth.cells}
-            times={tl.earth.times}
+            intervals={tl.earth.intervals}
+            end={tl.earth.start + tl.earth.cells.length * tl.earth.stepMs}
             rowY={earthY}
             color="var(--earth)"
             axisStart={axisStart}
@@ -624,6 +620,12 @@ function ColumnBody({
         </div>
         <p>{status.detail}</p>
       </div>
+      {sun.horizon && sun.horizon.length > 360 ? <p className="metric-explanation">{language === 'ko'
+        ? '중심점: 5m 지역 지형 + 240m 원거리 지형, 방향 0.1° 간격. 주변 오차 평가 점은 기존 240m 지형입니다.'
+        : 'Center: local 5m + distant 240m terrain, 0.1° horizon. Neighbouring points retain 240m terrain.'}</p> : null}
+      <p className="metric-explanation">{language === 'ko'
+        ? `가시 구간 합산 추정 · 태양: ${sun.refined ? '경계 부근 1분 천체력' : '1시간 천체력'} · 지구: ${earth.refined ? '경계 부근 1분 천체력' : '1시간 천체력'}`
+        : `Integrated intervals · Sun: ${sun.refined ? 'adaptive 1 min' : 'hourly'} · Earth: ${earth.refined ? 'adaptive 1 min' : 'hourly'}`}</p>
       <div className="lead">
         <div className="lead-label">
           {t.powerAndContact}

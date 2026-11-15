@@ -2,7 +2,7 @@ import { BODY_RADIUS_DEG, DATA_RANGE } from './ephemeris';
 import type { Ephemeris, Sample } from './ephemeris';
 
 // 지평선 높이 h(az) (PRD 4.2). 지형 자료가 없으면 매끈한 구(0°),
-// 있으면 1° 간격 값을 선형 보간한다.
+// 있으면 원형 균등 격자 값을 선형 보간한다.
 export function horizonHeight(azDeg: number, horizon?: number[]): number {
   if (!horizon || horizon.length === 0) return 0;
   const n = horizon.length;
@@ -34,40 +34,93 @@ export interface Crossing {
   rises: boolean; // true: 안 보임 -> 보임
 }
 
-// PRD 4.4: 부호가 바뀌는 연속 두 샘플 사이를 선형 보간한다.
-export function crossings(eph: Ephemeris): Crossing[] {
-  const out: Crossing[] = [];
-  const s = eph.samples;
-  for (let i = 0; i + 1 < s.length; i += 1) {
-    const a = s[i]!;
-    const b = s[i + 1]!;
-    const fa = margin(a, eph.body, eph.horizon);
-    const fb = margin(b, eph.body, eph.horizon);
-    if (fa < 0 === fb < 0) continue;
+// Between ephemeris samples, interpolate azimuth on its shortest circular arc and
+// elevation linearly. Split at EVERY horizon knot: equal endpoint signs can hide
+// a ridge crossing. This refines geometry, not the underlying orbital data.
+interface Node { t: number; f: number }
+const nodeCache = new WeakMap<Ephemeris, Node[]>();
+function nodes(eph: Ephemeris): Node[] {
+  const cached = nodeCache.get(eph);
+  if (cached) return cached;
+  const out: Node[] = [];
+  for (let i = 0; i < eph.samples.length; i++) {
+    const a = eph.samples[i]!;
     const ta = Date.parse(a.t);
+    out.push({ t: ta, f: margin(a, eph.body, eph.horizon) });
+    const b = eph.samples[i + 1];
+    if (!b || !eph.horizon?.length) continue;
     const tb = Date.parse(b.t);
-    out.push({ t: ta + ((tb - ta) * fa) / (fa - fb), rises: fa < 0 });
+    const da = ((b.az - a.az + 540) % 360) - 180;
+    if (!da) continue;
+    const step = 360 / eph.horizon.length;
+    const lo = Math.min(a.az, a.az + da), hi = Math.max(a.az, a.az + da);
+    const fractions: number[] = [];
+    for (let k = Math.floor(lo / step) + 1; k * step < hi; k++) {
+      fractions.push((k * step - a.az) / da);
+    }
+    fractions.sort((x, y) => x - y);
+    for (const u of fractions) out.push({ t: ta + (tb - ta) * u,
+      f: margin({ az: a.az + da * u, el: a.el + (b.el - a.el) * u }, eph.body, eph.horizon) });
+  }
+  nodeCache.set(eph, out);
+  return out;
+}
+
+export function crossings(eph: Ephemeris): Crossing[] {
+  const ns = nodes(eph), out: Crossing[] = [];
+  for (let i = 0; i + 1 < ns.length; i++) {
+    const a = ns[i]!, b = ns[i + 1]!;
+    if ((a.f < 0) === (b.f < 0)) continue;
+    const event = { t: a.t + (b.t - a.t) * a.f / (a.f - b.f), rises: a.f < 0 };
+    // Touching zero at one instant has no finite visible/dark interval.
+    if (out.at(-1)?.t === event.t) out.pop();
+    else out.push(event);
   }
   return out;
 }
 
-// t0 시점 상태를 알기 위해 t0 직전까지의 샘플·교차를 본다.
-function visibleAt(eph: Ephemeris, t0: number): boolean {
-  const s = eph.samples;
-  for (let i = s.length - 1; i >= 0; i -= 1) {
-    const t = Date.parse(s[i]!.t);
-    if (t <= t0) {
-      // t0가 샘플과 샘플 사이에 있으면 선형 보간한 f(t0)의 부호로 판정한다.
-      const next = s[i + 1];
-      if (t === t0 || next === undefined) return isVisible(s[i]!, eph.body, eph.horizon);
-      const fa = margin(s[i]!, eph.body, eph.horizon);
-      const fb = margin(next, eph.body, eph.horizon);
-      const tb = Date.parse(next.t);
-      const f = fa + ((fb - fa) * (t0 - t)) / (tb - t);
-      return f >= 0;
-    }
+function visibleAt(eph: Ephemeris, t: number): boolean {
+  const ns = nodes(eph);
+  let lo = 0, hi = ns.length - 1;
+  while (lo < hi) { const mid = Math.ceil((lo + hi) / 2); if (ns[mid]!.t <= t) lo = mid; else hi = mid - 1; }
+  const a = ns[lo], b = ns[lo + 1];
+  if (!a) return false;
+  if (!b || t <= a.t) return a.f >= 0;
+  return a.f + (b.f - a.f) * (t - a.t) / (b.t - a.t) >= 0;
+}
+
+export interface Interval { start: number; end: number }
+const intervalCache = new WeakMap<Ephemeris, Interval[]>();
+export function visibleIntervals(eph: Ephemeris): Interval[] {
+  const cached = intervalCache.get(eph);
+  if (cached) return cached;
+  const ns = nodes(eph), out: Interval[] = [];
+  for (let i = 0; i + 1 < ns.length; i++) {
+    const a = ns[i]!, b = ns[i + 1]!;
+    if (a.f < 0 && b.f < 0) continue;
+    const cross = a.t + (b.t - a.t) * a.f / (a.f - b.f);
+    const start = a.f < 0 ? cross : a.t, end = b.f < 0 ? cross : b.t;
+    if (end <= start) continue;
+    const last = out.at(-1);
+    if (last && last.end === start) last.end = end;
+    else out.push({ start, end });
   }
-  return isVisible(s[0]!, eph.body, eph.horizon);
+  intervalCache.set(eph, out);
+  return out;
+}
+export function intersectIntervals(a: Interval[], b: Interval[]): Interval[] {
+  const out: Interval[] = [];
+  let i = 0, j = 0;
+  while (i < a.length && j < b.length) {
+    const x = a[i]!, y = b[j]!;
+    const start = Math.max(x.start, y.start), end = Math.min(x.end, y.end);
+    if (end > start) out.push({ start, end });
+    if (x.end <= y.end) i++; else j++;
+  }
+  return out;
+}
+export function intervalDuration(intervals: Interval[], start: number, end: number): number {
+  return intervals.reduce((sum, r) => sum + Math.max(0, Math.min(end, r.end) - Math.max(start, r.start)), 0);
 }
 
 export interface NextEvent {
@@ -90,7 +143,7 @@ export function nextEvent(eph: Ephemeris, t0: number): NextEvent {
 }
 
 export interface WindowStats {
-  fraction: number; // 보이는 샘플 비율
+  fraction: number; // 경계 사이의 가시 구간 길이 / 관찰 기간
   sampleCount: number;
   longestDarkHours: number; // sunlit=false 연속 최대 길이 (시간)
   maxElevationAboveHorizon: number | null; // 보이는 샘플 중 max(el - h)
@@ -106,31 +159,33 @@ function windowSamples(eph: Ephemeris, t0: number, days: number): Sample[] {
 
 export function stats(eph: Ephemeris, t0: number, days: number): WindowStats {
   const samples = windowSamples(eph, t0, days);
-  let visibleCount = 0;
-  let darkRun = 0;
-  let longestDark = 0;
   let maxEl: number | null = null;
   for (const s of samples) {
     if (isVisible(s, eph.body, eph.horizon)) {
-      visibleCount += 1;
-      darkRun = 0;
       const above = s.el - horizonHeight(s.az, eph.horizon);
       if (maxEl === null || above > maxEl) maxEl = above;
-    } else {
-      darkRun += 1;
-      if (darkRun > longestDark) longestDark = darkRun;
     }
   }
+  const end = t0 + days * 86400_000;
+  const intervals = visibleIntervals(eph);
+  let cursor = t0, longestMs = 0;
+  for (const r of intervals) {
+    if (r.end <= t0 || r.start >= end) continue;
+    longestMs = Math.max(longestMs, Math.max(t0, r.start) - cursor);
+    cursor = Math.min(end, r.end);
+  }
+  longestMs = Math.max(longestMs, end - cursor);
   return {
-    fraction: samples.length === 0 ? 0 : visibleCount / samples.length,
+    fraction: intervalDuration(intervals, t0, end) / (end - t0),
     sampleCount: samples.length,
-    longestDarkHours: longestDark, // 1시간 샘플
+    longestDarkHours: longestMs / 3600_000,
     maxElevationAboveHorizon: maxEl,
   };
 }
 
 // PRD 4.7: 타임라인 셀. 1시간 1셀.
 export interface Timeline {
+  intervals: Interval[];
   cells: boolean[]; // 시간 순서
   times: number[]; // 각 셀의 실제 샘플 시각 (epoch ms)
   start: number;
@@ -146,23 +201,20 @@ export function timeline(
   const stepMs = 3600_000;
   // 샘플은 정시 단위라 t0이 정시가 아니면 첫 셀은 t0이 아니라
   // t0 이후 첫 정시에 온다. 그릴 때는 times를 써야 축이 어긋나지 않는다.
-  const sunSamples = windowSamples(sun, t0, days);
-  const earthSamples = windowSamples(earth, t0, days);
-  const sunCells = sunSamples.map((s) => isVisible(s, 'sun', sun.horizon));
-  const earthCells = earthSamples.map((s) => isVisible(s, 'earth', earth.horizon));
-  let both = 0;
-  for (let i = 0; i < Math.min(sunCells.length, earthCells.length); i += 1) {
-    if (sunCells[i] && earthCells[i]) both += 1;
-  }
+  const times: number[] = [];
+  for (let t = Math.ceil(t0 / stepMs) * stepMs; t < t0 + days * 86400_000; t += stepMs) times.push(t);
+  const sunCells = times.map((t) => visibleAt(sun, t));
+  const earthCells = times.map((t) => visibleAt(earth, t));
   return {
-    sun: { cells: sunCells, times: sunSamples.map((s) => Date.parse(s.t)), start: t0, stepMs },
+    sun: { intervals: visibleIntervals(sun), cells: sunCells, times: times, start: t0, stepMs },
     earth: {
+      intervals: visibleIntervals(earth),
       cells: earthCells,
-      times: earthSamples.map((s) => Date.parse(s.t)),
+      times: times,
       start: t0,
       stepMs,
     },
-    bothVisibleMs: both * stepMs,
+    bothVisibleMs: intervalDuration(intersectIntervals(visibleIntervals(sun), visibleIntervals(earth)), t0, t0 + days * 86400_000),
   };
 }
 
