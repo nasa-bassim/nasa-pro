@@ -1481,3 +1481,719 @@ html[lang='ko'] .hero-text .product h1 {
 .d-preset button.active {
   border-color: transparent;
 }
+
+/* Mission Globe makes the spatial choice the center of the setup experience. */
+.workspace-page > .hero {
+  max-width: 1240px;
+  padding-bottom: 62px;
+}
+.hero {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 48px;
+}
+.hero-text {
+  width: min(100%, 720px);
+  margin: 0 auto;
+}
+.mission-globe {
+  width: min(100%, 720px);
+  margin: 0 auto;
+}
+.mission-globe .moon {
+  width: min(100%, 680px);
+  max-width: 680px;
+  margin: 66px auto 0;
+}
+.marker.is-selected {
+  border-color: var(--sunlit);
+  background: var(--sunlit);
+  box-shadow: 0 0 0 4px rgba(242, 176, 30, .22);
+}
+.lunar-pulse-stage {
+  display: grid;
+  min-height: 64px;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  width: min(100%, 680px);
+  margin: 34px auto 0;
+  padding-top: 18px;
+  border-top: 1px solid #424245;
+}
+.lunar-pulse-stage span {
+  color: #a1a1a6;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .08em;
+}
+.lunar-pulse-stage strong {
+  color: #f5f5f7;
+  overflow: hidden;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 760px) {
+  .workspace-page > .hero { padding-bottom: 38px; }
+  .hero { gap: 34px; }
+  .mission-globe .moon { width: min(100%, 520px); margin-top: 56px; }
+  .lunar-pulse-stage { min-height: 52px; margin-top: 24px; padding-top: 14px; }
+}
+
+.lunar-pulse-stage {
+  width: min(100%, 680px);
+  min-height: 64px;
+  margin: 34px auto 0;
+  padding-top: 18px;
+  border-top: 1px solid #424245;
+  color: #a1a1a6;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.lunar-pulse-stage.is-open { animation: lunar-pulse-reveal 420ms ease-out both; }
+.lunar-pulse-stage > span {
+  display: block;
+  color: #a1a1a6;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .08em;
+}
+.lunar-pulse-stage > strong {
+  display: block;
+  overflow: hidden;
+  margin-top: 6px;
+  color: #f5f5f7;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lunar-pulse-stage > p { margin: 0; }
+.lunar-pulse { margin-top: 22px; }
+.lunar-pulse-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.lunar-pulse-head span {
+  display: block;
+  color: #a1a1a6;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .08em;
+}
+.lunar-pulse-head h2 {
+  margin: 5px 0 0;
+  color: #f5f5f7;
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: -.025em;
+}
+.lunar-pulse-head > strong { color: #f5f5f7; font-size: 22px; font-weight: 600; letter-spacing: -.04em; white-space: nowrap; }
+.lunar-pulse svg { display: block; width: 100%; overflow: visible; }
+.lunar-pulse-row { animation: lunar-pulse-row 440ms ease-out var(--pulse-delay) both; transform-origin: center; }
+.lunar-pulse-row text { fill: #a1a1a6; font-size: 12px; }
+.lunar-pulse-axis text { fill: #86868b; font-size: 11px; }
+@keyframes lunar-pulse-reveal { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes lunar-pulse-row { from { opacity: 0; transform: scaleX(.25); } to { opacity: 1; transform: scaleX(1); } }
+@media (max-width: 760px) {
+  .lunar-pulse-stage { margin-top: 24px; padding-top: 14px; }
+  .lunar-pulse-head > strong { font-size: 19px; }
+  .lunar-pulse-head h2 { font-size: 15px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lunar-pulse-stage.is-open, .lunar-pulse-row { animation: none; }
+}
+
+/* A restrained atmosphere keeps the landing page balanced while giving the Moon room to breathe. */
+.landing-page {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(58% 64% at 84% 58%, rgba(92, 111, 133, .16) 0%, rgba(30, 36, 46, .08) 38%, transparent 72%),
+    radial-gradient(46% 58% at 8% 18%, rgba(23, 60, 96, .13) 0%, transparent 68%),
+    #000;
+}
+.landing-page::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 52px 0 0;
+  pointer-events: none;
+  background:
+    linear-gradient(112deg, rgba(0, 0, 0, .32) 2%, transparent 43%),
+    radial-gradient(42% 56% at 77% 53%, rgba(255, 255, 255, .045), transparent 74%);
+}
+.landing-hero { background: transparent; }
+.landing-moon-panel .moon {
+  filter:
+    drop-shadow(0 0 34px rgba(170, 187, 205, .12))
+    drop-shadow(18px 24px 56px rgba(0, 0, 0, .7));
+}
+@media (max-width: 760px) {
+  .landing-page {
+    background:
+      radial-gradient(94% 42% at 70% 66%, rgba(92, 111, 133, .11), transparent 72%),
+      radial-gradient(80% 44% at 4% 10%, rgba(23, 60, 96, .10), transparent 72%),
+      #000;
+  }
+  .landing-page::before { background: linear-gradient(180deg, rgba(0,0,0,.2), transparent 40%); }
+}
+
+/* Make the landing atmosphere visible without competing with the editorial layout. */
+.landing-page {
+  background:
+    radial-gradient(62% 72% at 82% 57%, rgba(103, 126, 153, .30) 0%, rgba(42, 54, 70, .18) 36%, rgba(0, 0, 0, 0) 72%),
+    radial-gradient(54% 70% at 6% 14%, rgba(12, 73, 132, .24) 0%, rgba(5, 28, 55, .10) 42%, transparent 74%),
+    linear-gradient(118deg, #02050a 0%, #000 48%, #050a10 100%);
+}
+.landing-page::before {
+  background:
+    linear-gradient(108deg, rgba(0, 0, 0, .50) 0%, rgba(0, 0, 0, .16) 40%, transparent 63%),
+    radial-gradient(44% 62% at 76% 54%, rgba(202, 218, 235, .11) 0%, rgba(124, 151, 180, .055) 32%, transparent 74%);
+}
+.landing-moon-panel .moon {
+  filter:
+    drop-shadow(0 0 52px rgba(175, 201, 226, .23))
+    drop-shadow(24px 30px 70px rgba(0, 0, 0, .76));
+}
+@media (max-width: 760px) {
+  .landing-page {
+    background:
+      radial-gradient(106% 52% at 74% 68%, rgba(103, 126, 153, .20), transparent 72%),
+      radial-gradient(90% 52% at 3% 9%, rgba(12, 73, 132, .16), transparent 72%),
+      #000;
+  }
+}
+
+
+/* A captured landing Moon bridges the two screens while the interactive Globe loads behind it. */
+.moon-flight {
+  position: fixed;
+  z-index: 20;
+  display: block;
+  pointer-events: none;
+  border-radius: 50%;
+  object-fit: contain;
+  filter:
+    drop-shadow(0 0 52px rgba(175, 201, 226, .23))
+    drop-shadow(24px 30px 70px rgba(0, 0, 0, .76));
+  transition:
+    left 560ms cubic-bezier(.22, .82, .24, 1),
+    top 560ms cubic-bezier(.22, .82, .24, 1),
+    width 560ms cubic-bezier(.22, .82, .24, 1),
+    height 560ms cubic-bezier(.22, .82, .24, 1),
+    opacity 160ms ease-out,
+    transform 240ms cubic-bezier(.22, .82, .24, 1);
+}
+.moon-flight.is-launching { transform: translate(-5vw, -2vh) scale(1.09); }
+.moon-flight.is-arriving { transform: none; }
+.workspace-page.is-moon-handoff .mission-globe .moon {
+  opacity: 0;
+  transition: opacity 220ms ease-out;
+}
+.workspace-page .mission-globe .moon { transition: opacity 220ms ease-out; }
+@media (max-width: 760px) {
+  .moon-flight.is-launching { transform: translate(0, -6vh) scale(1.07); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .moon-flight { transition: none; }
+}
+
+/* Setup is one decision canvas: selection expands evidence in-place, never into a scrolled page. */
+.workspace-page:has(.mission-canvas) {
+  height: 100dvh;
+  overflow: hidden;
+}
+.workspace-page:has(.mission-canvas) .workspace-flow {
+  padding-top: 10px;
+}
+.workspace-page > .mission-canvas {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  align-content: stretch;
+  gap: 0;
+  height: calc(100dvh - 104px);
+  min-height: 0;
+  max-width: 1240px;
+  padding: 10px 24px 20px;
+  overflow: hidden;
+}
+.mission-canvas .hero-text {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  width: 100%;
+  max-width: none;
+  min-height: 44px;
+  margin: 0;
+}
+.mission-canvas .product,
+.mission-canvas .intro,
+.mission-canvas .comparison-status,
+.mission-canvas .data-note { display: none; }
+.mission-canvas .scenario-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0;
+}
+.mission-canvas .bar-row { margin: 0; }
+.mission-canvas .bar-row:first-child { white-space: nowrap; }
+.mission-canvas .bar-row:last-child { justify-content: flex-end; }
+.mission-canvas .map-note {
+  max-width: 270px;
+  margin: 0;
+  padding-left: 12px;
+  border-left: 1px solid #424245;
+  font-size: 11px;
+  line-height: 1.35;
+}
+.mission-canvas .view-results { display: none; }
+.mission-canvas .mission-globe {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  align-items: center;
+  width: min(100%, 790px);
+  min-height: 0;
+  margin: 0 auto;
+  transition: width 380ms cubic-bezier(.22, .82, .24, 1);
+}
+.mission-canvas .mission-globe .moon {
+  width: min(100%, min(62vh, 630px));
+  max-width: none;
+  margin: 10px auto 0;
+  transition: width 380ms cubic-bezier(.22, .82, .24, 1), margin 380ms cubic-bezier(.22, .82, .24, 1);
+}
+.mission-canvas .lunar-pulse-stage {
+  width: min(100%, 760px);
+  max-height: 0;
+  min-height: 0;
+  margin: 0 auto;
+  padding: 0;
+  overflow: hidden;
+  border-top-color: transparent;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: max-height 420ms cubic-bezier(.22, .82, .24, 1), margin 420ms cubic-bezier(.22, .82, .24, 1), padding 420ms cubic-bezier(.22, .82, .24, 1), border-color 240ms ease-out, opacity 240ms ease-out, transform 420ms cubic-bezier(.22, .82, .24, 1);
+}
+.mission-canvas.has-exploration .mission-globe { width: min(100%, 720px); }
+.mission-canvas.has-exploration .mission-globe .moon {
+  width: min(100%, min(42vh, 430px));
+  margin-top: 0;
+}
+.mission-canvas.has-exploration .lunar-pulse-stage {
+  max-height: min(36vh, 280px);
+  margin-top: 12px;
+  padding-top: 14px;
+  overflow: visible;
+  border-top-color: #424245;
+  opacity: 1;
+  transform: translateY(0);
+}
+.mission-canvas .lunar-pulse-stage > p { align-self: center; }
+.mission-canvas .lunar-pulse { margin-top: 14px; }
+.mission-canvas .lunar-pulse-head { margin-bottom: 9px; }
+.mission-canvas .lunar-pulse-head h2 { font-size: 15px; }
+.mission-canvas .lunar-pulse-head > strong { font-size: 20px; }
+@media (max-width: 960px) {
+  .mission-canvas .hero-text { grid-template-columns: 1fr auto; gap: 10px; }
+  .mission-canvas .scenario-bar { gap: 10px; }
+  .mission-canvas .scenario-bar .bar-row:last-child { display: none; }
+  .mission-canvas .map-note { display: none; }
+}
+@media (max-width: 760px) {
+  .workspace-page:has(.mission-canvas) .workspace-nav { height: 48px; }
+  .workspace-page:has(.mission-canvas) .workspace-flow { padding-top: 6px; }
+  .workspace-page > .mission-canvas {
+    height: calc(100dvh - 92px);
+    padding: 8px 16px 14px;
+  }
+  .mission-canvas .hero-text { min-height: 38px; }
+  .mission-canvas .scenario-bar { width: 100%; justify-content: space-between; }
+  .mission-canvas .d-label { display: none; }
+  .mission-canvas .d-preset button { min-width: 45px; height: 32px; }
+  .mission-canvas .mission-globe .moon { width: min(100%, min(55vh, 440px)); margin-top: 0; }
+  .mission-canvas.has-exploration .mission-globe .moon { width: min(100%, min(36vh, 310px)); }
+  .mission-canvas.has-exploration .lunar-pulse-stage { max-height: min(42vh, 320px); margin-top: 6px; padding-top: 10px; }
+  .mission-canvas .lunar-pulse-stage > span { font-size: 10px; }
+  .mission-canvas .lunar-pulse-stage > strong { margin-top: 2px; font-size: 14px; }
+  .mission-canvas .lunar-pulse { margin-top: 10px; }
+  .mission-canvas .lunar-pulse-head h2 { font-size: 13px; }
+  .mission-canvas .lunar-pulse-head > strong { font-size: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mission-canvas .mission-globe,
+  .mission-canvas .mission-globe .moon,
+  .mission-canvas .lunar-pulse-stage { transition: none; }
+}
+
+/* The second screen begins as a single, uncluttered Mission Globe. */
+.workspace-page:has(.mission-canvas) .workspace-flow { display: none; }
+.workspace-page > .mission-canvas {
+  height: calc(100dvh - 52px);
+  grid-template-rows: minmax(0, 1fr);
+  padding: 0 24px 18px;
+}
+.mission-canvas .hero-text { display: none; }
+.mission-canvas .mission-globe {
+  width: min(100%, 920px);
+  height: 100%;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+.mission-canvas .mission-globe .moon {
+  width: min(100%, min(82vh, 790px));
+  margin: 0 auto;
+}
+.mission-canvas .moon-heading,
+.mission-canvas .zoom-readout,
+.mission-canvas .moon-tools { display: none; }
+.mission-canvas:not(.has-exploration) .lunar-pulse-stage { display: none; }
+.mission-canvas.has-exploration .mission-globe {
+  width: min(100%, 720px);
+  height: 100%;
+}
+.mission-canvas.has-exploration .mission-globe .moon {
+  width: min(100%, min(42vh, 430px));
+  margin: 0 auto;
+}
+.mission-canvas.has-exploration .lunar-pulse-stage { display: block; }
+@media (max-width: 760px) {
+  .workspace-page > .mission-canvas {
+    height: calc(100dvh - 48px);
+    padding: 0 16px 10px;
+  }
+  .mission-canvas .mission-globe .moon { width: min(100%, min(68vh, 520px)); }
+  .mission-canvas.has-exploration .mission-globe .moon { width: min(100%, min(36vh, 310px)); }
+}
+
+/* The guide explains the canvas one thought at a time without competing with the Globe. */
+.mission-canvas { position: relative; }
+.mission-canvas .mission-globe {
+  width: min(100%, 980px);
+}
+.mission-canvas .mission-globe .moon {
+  width: min(100%, min(88vh, 860px));
+}
+.mission-guide {
+  position: absolute;
+  z-index: 4;
+  right: clamp(24px, 4vw, 64px);
+  bottom: clamp(24px, 7vh, 72px);
+  width: min(276px, 24vw);
+  padding: 18px;
+  border: 1px solid rgba(245,245,247,.17);
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(28,28,30,.92), rgba(9,9,10,.88));
+  box-shadow: 0 18px 46px rgba(0,0,0,.34);
+  backdrop-filter: blur(14px);
+  animation: mission-guide-in 480ms 220ms ease-out both;
+}
+.mission-guide-count {
+  color: #a1a1a6;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .08em;
+}
+.mission-guide h2 {
+  margin: 10px 0 7px;
+  color: #f5f5f7;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -.03em;
+}
+.mission-guide p {
+  min-height: 58px;
+  margin: 0;
+  color: #a1a1a6;
+  font-size: 13px;
+  line-height: 1.48;
+}
+.mission-guide-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+.mission-guide button { min-height: 32px; padding: 0 10px; border-radius: 999px; font-size: 12px; }
+.mission-guide-skip { border: 0; background: transparent; color: #a1a1a6; }
+.mission-guide-next { border: 0; background: #f5f5f7; color: #000; font-weight: 600; }
+.mission-guide-next:hover { background: #fff; }
+@keyframes mission-guide-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 760px) {
+  .mission-canvas .mission-globe .moon { width: min(100%, min(74vh, 580px)); }
+  .mission-guide {
+    right: 16px;
+    bottom: 16px;
+    left: 16px;
+    width: auto;
+    padding: 14px 16px;
+  }
+  .mission-guide h2 { margin-top: 7px; font-size: 16px; }
+  .mission-guide p { min-height: 0; font-size: 12px; }
+  .mission-guide-actions { margin-top: 12px; }
+}
+@media (prefers-reduced-motion: reduce) { .mission-guide { animation: none; } }
+
+/* Each guide step follows the interaction it describes, and its action colors override global button hovers. */
+.mission-guide {
+  transition: top 420ms cubic-bezier(.22,.82,.24,1), right 420ms cubic-bezier(.22,.82,.24,1), bottom 420ms cubic-bezier(.22,.82,.24,1), left 420ms cubic-bezier(.22,.82,.24,1);
+}
+.mission-guide.is-step-1 {
+  right: auto;
+  bottom: clamp(48px, 13vh, 132px);
+  left: clamp(24px, 6vw, 92px);
+}
+.mission-guide.is-step-2 {
+  top: clamp(28px, 9vh, 96px);
+  right: clamp(24px, 5vw, 78px);
+  bottom: auto;
+  left: auto;
+}
+.mission-guide .mission-guide-next,
+.mission-guide .mission-guide-next:hover:not(:disabled),
+.mission-guide .mission-guide-next:focus-visible {
+  box-sizing: border-box;
+  border: 1px solid #fff;
+  background: #f5f5f7;
+  color: #000;
+  opacity: 1;
+  visibility: visible;
+  box-shadow: none;
+}
+.mission-guide .mission-guide-next:hover:not(:disabled) {
+  background: #fff;
+  color: #000;
+}
+.mission-guide .mission-guide-next:focus-visible {
+  outline: 2px solid #2997ff;
+  outline-offset: 3px;
+}
+.mission-guide .mission-guide-skip:hover:not(:disabled),
+.mission-guide .mission-guide-skip:focus-visible {
+  background: rgba(255,255,255,.1);
+  color: #f5f5f7;
+}
+@media (max-width: 760px) {
+  .mission-guide.is-step-1,
+  .mission-guide.is-step-2 {
+    top: auto;
+    right: 16px;
+    bottom: 16px;
+    left: 16px;
+  }
+  .mission-guide.is-step-1 { bottom: 28px; }
+  .mission-guide.is-step-2 { bottom: 40px; }
+}
+@media (prefers-reduced-motion: reduce) { .mission-guide { transition: none; } }
+
+/* A site selection preserves the Moon as the object of focus, then grows a connected evidence branch from it. */
+.mission-canvas .mission-globe {
+  width: min(100%, 1040px);
+  position: relative;
+  isolation: isolate;
+}
+.mission-canvas .mission-globe .moon {
+  width: min(100%, min(92vh, 900px));
+  max-width: none;
+  margin: 0 auto;
+  transition: width 520ms cubic-bezier(.22,.82,.24,1), transform 520ms cubic-bezier(.22,.82,.24,1);
+}
+.mission-canvas.has-exploration .mission-globe {
+  width: min(100%, 1120px);
+}
+.mission-canvas.has-exploration .mission-globe .moon {
+  width: min(100%, min(72vh, 700px));
+  margin: 0;
+  transform: translateX(clamp(-220px, -12vw, -92px));
+}
+.mission-canvas.has-exploration .lunar-pulse-stage {
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  right: clamp(0px, 1.5vw, 22px);
+  width: min(38vw, 480px);
+  max-height: none;
+  min-height: 0;
+  margin: 0;
+  padding: 18px 20px 16px;
+  overflow: visible;
+  border: 1px solid rgba(245,245,247,.18);
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(28,28,30,.96), rgba(10,10,11,.92));
+  box-shadow: 0 24px 68px rgba(0,0,0,.42);
+  opacity: 1;
+  transform: translateY(-50%);
+  animation: site-evidence-branch 560ms cubic-bezier(.22,.82,.24,1) both;
+}
+.mission-canvas.has-exploration .lunar-pulse-stage::before {
+  position: absolute;
+  top: 74px;
+  left: clamp(-116px, -8vw, -64px);
+  width: clamp(64px, 8vw, 116px);
+  height: 1px;
+  background: linear-gradient(90deg, rgba(242,176,30,.95), rgba(41,151,255,.9));
+  box-shadow: 0 0 18px rgba(41,151,255,.45);
+  content: '';
+}
+.mission-canvas.has-exploration .lunar-pulse-stage::after {
+  position: absolute;
+  top: 69px;
+  left: clamp(-122px, -8.45vw, -70px);
+  width: 10px;
+  height: 10px;
+  border: 2px solid #f2b01e;
+  border-radius: 50%;
+  background: #111;
+  box-shadow: 0 0 0 5px rgba(242,176,30,.13), 0 0 20px rgba(242,176,30,.6);
+  content: '';
+}
+.mission-canvas.has-exploration .lunar-pulse-stage > span {
+  display: block;
+  margin-bottom: 5px;
+  color: #f2b01e;
+}
+.mission-canvas.has-exploration .lunar-pulse-stage > strong {
+  display: block;
+  margin: 0;
+  font-size: 17px;
+}
+.mission-canvas.has-exploration .lunar-pulse {
+  margin-top: 16px;
+}
+.mission-canvas.has-exploration .lunar-pulse-head { margin-bottom: 11px; }
+.mission-canvas.has-exploration .lunar-pulse svg { overflow: visible; }
+@keyframes site-evidence-branch {
+  from { opacity: 0; transform: translate(-46px, -50%) scaleX(.72); transform-origin: left center; }
+  to { opacity: 1; transform: translateY(-50%) scaleX(1); transform-origin: left center; }
+}
+@media (max-width: 960px) {
+  .mission-canvas .mission-globe .moon { width: min(100%, min(88vh, 790px)); }
+  .mission-canvas.has-exploration .mission-globe .moon {
+    width: min(100%, min(61vh, 560px));
+    transform: translateX(clamp(-125px, -13vw, -58px));
+  }
+  .mission-canvas.has-exploration .lunar-pulse-stage { width: min(42vw, 430px); }
+}
+@media (max-width: 760px) {
+  .mission-canvas .mission-globe .moon { width: min(100%, min(82vh, 640px)); }
+  .mission-canvas.has-exploration .mission-globe .moon {
+    width: min(100%, min(45vh, 360px));
+    margin: 0 auto;
+    transform: none;
+  }
+  .mission-canvas.has-exploration .lunar-pulse-stage {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    max-height: min(47vh, 370px);
+    padding: 14px 15px 12px;
+    overflow: hidden;
+    transform: none;
+    animation-name: site-evidence-branch-mobile;
+  }
+  .mission-canvas.has-exploration .lunar-pulse-stage::before {
+    top: -28px;
+    left: 50%;
+    width: 1px;
+    height: 28px;
+    background: linear-gradient(#f2b01e, #2997ff);
+  }
+  .mission-canvas.has-exploration .lunar-pulse-stage::after {
+    top: -34px;
+    left: calc(50% - 5px);
+  }
+  .mission-canvas.has-exploration .lunar-pulse { margin-top: 10px; }
+}
+@keyframes site-evidence-branch-mobile {
+  from { opacity: 0; transform: translateY(22px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mission-canvas .mission-globe .moon { transition: none; }
+  .mission-canvas.has-exploration .lunar-pulse-stage { animation: none; }
+}
+
+/* Keep the selected point and its evidence in one readable horizontal story on wide screens. */
+.mission-canvas.has-exploration .mission-globe .moon {
+  justify-self: start;
+  width: min(100%, min(78vh, 740px));
+  transform: translateX(clamp(-240px, -17vw, -132px));
+}
+.mission-canvas.has-exploration .lunar-pulse-stage {
+  width: min(36vw, 464px);
+}
+.mission-canvas.has-exploration .lunar-pulse-stage::before {
+  top: 50%;
+  left: clamp(-405px, -28vw, -210px);
+  width: clamp(200px, 28vw, 405px);
+  transform: translateY(-50%);
+}
+.mission-canvas.has-exploration .lunar-pulse-stage::after {
+  top: calc(50% - 6px);
+  left: clamp(-411px, -28.45vw, -216px);
+}
+@media (max-width: 960px) {
+  .mission-canvas.has-exploration .mission-globe .moon {
+    justify-self: start;
+    width: min(100%, min(65vh, 590px));
+    transform: translateX(clamp(-180px, -16vw, -86px));
+  }
+  .mission-canvas.has-exploration .lunar-pulse-stage { width: min(42vw, 414px); }
+  .mission-canvas.has-exploration .lunar-pulse-stage::before {
+    left: clamp(-278px, -28vw, -180px);
+    width: clamp(170px, 28vw, 278px);
+  }
+  .mission-canvas.has-exploration .lunar-pulse-stage::after { left: clamp(-284px, -28.6vw, -186px); }
+}
+@media (max-width: 760px) {
+  .mission-canvas.has-exploration .mission-globe .moon {
+    justify-self: center;
+    width: min(100%, min(48vh, 390px));
+    margin: 0 auto;
+    transform: none;
+  }
+  .mission-canvas.has-exploration .lunar-pulse-stage::before {
+    top: -28px;
+    left: 50%;
+    width: 1px;
+    height: 28px;
+    transform: none;
+  }
+  .mission-canvas.has-exploration .lunar-pulse-stage::after {
+    top: -34px;
+    left: calc(50% - 5px);
+  }
+}
+
+/* The branch begins at the Moon's visible rim; preserve the selected globe inside the viewport. */
+.mission-canvas.has-exploration .mission-globe .moon {
+  transform: translateX(clamp(-132px, -9vw, -64px));
+}
+.mission-canvas.has-exploration .lunar-pulse-stage::before {
+  left: clamp(-156px, -11vw, -88px);
+  width: clamp(82px, 11vw, 156px);
+}
+.mission-canvas.has-exploration .lunar-pulse-stage::after {
+  left: clamp(-162px, -11.4vw, -94px);
+}
+@media (max-width: 960px) {
+  .mission-canvas.has-exploration .mission-globe .moon {
+    transform: translateX(clamp(-94px, -10vw, -48px));
+  }
+  .mission-canvas.has-exploration .lunar-pulse-stage::before {
+    left: clamp(-118px, -13vw, -72px);
+    width: clamp(66px, 13vw, 118px);
+  }
+  .mission-canvas.has-exploration .lunar-pulse-stage::after { left: clamp(-124px, -13.5vw, -78px); }
+}
