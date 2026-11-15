@@ -65,3 +65,10 @@ export const SITES: SiteInfo[] = [
     sourceUrl: 'https://nssdc.gsfc.nasa.gov/planetary/lunar/lunar_sites.html',
   },
 ];
+
+// 좁은 자리(시나리오 칩, 달 위 이름표)에 쓰는 짧은 이름.
+const SHORT_NAME: Record<string, string> = {
+  'chandrayaan-3': 'Chandrayaan-3',
+  'apollo-11': 'Apollo 11',
+};
+export const shortSiteName = (slug: string): string => SHORT_NAME[slug] ?? slug.toUpperCase();

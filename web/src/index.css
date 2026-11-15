@@ -2428,3 +2428,79 @@ html[lang='ko'] .hero-text .product h1 {
 .selected-scenario { margin-top: 24px; }
 .footnote summary { color: #a1a1a6; cursor: pointer; font-size: 13px; font-weight: 600; }
 .footnote p { margin: 12px 0 0; max-width: 980px; color: #86868b; font-size: 13px; line-height: 1.65; }
+
+/* Scenario controls name the site as well as the date, so sites can be compared. */
+.mission-control-deck { grid-template-columns: minmax(0, 1.3fr) minmax(190px, 1fr) auto auto; row-gap: 9px; }
+.mission-control-summary { display: none; }
+.mission-scenario-tabs { grid-column: 1 / -1; }
+.mission-scenario-tabs button { grid-template-columns: auto auto auto; }
+.mission-scenario-tabs .scenario-chip-site { color: #f5f5f7; font-weight: 600; }
+.mission-scenario-tabs button:not(.is-selected) .scenario-chip-site { color: #d1d1d6; }
+.mission-control-site { display: grid; gap: 3px; min-width: 0; }
+.mission-control-site > span { color: #a1a1a6; font-size: 10px; font-weight: 600; }
+.mission-control-site select {
+  width: 100%;
+  min-width: 0;
+  min-height: 36px;
+  padding: 0 9px;
+  border-color: #3a3a3c;
+  background-color: #19191b;
+  color: #f5f5f7;
+  font-size: 12px;
+  text-overflow: ellipsis;
+}
+.mission-control-date { position: relative; }
+.mission-control-date .warn {
+  position: absolute;
+  z-index: 7;
+  top: calc(100% + 4px);
+  left: 0;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: #2a1b1a;
+  color: #ff9c95;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.mission-site-editor-panel { flex-wrap: wrap; width: min(520px, calc(100vw - 48px)); }
+.mission-site-editor-panel select { flex: 1 1 200px; }
+
+/* The Moon always fits the space under the controls, with its view tools in reach. */
+.mission-canvas .mission-globe { min-height: 0; container-type: size; }
+.mission-canvas .mission-globe .moon,
+.mission-canvas.has-exploration .mission-globe .moon { max-width: min(100cqw, calc(100cqh - 20px)); }
+.mission-canvas .moon-tools { display: inline-flex; }
+.site-insight-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.site-insight-actions button { min-height: 36px; padding: 0 12px; border-radius: 999px; font-size: 12px; }
+
+/* The comparison table is the scenario picker: one row per scenario, selected row marked. */
+.table-head, .table-row { grid-template-columns: minmax(0, 1.5fr) minmax(0, .9fr) minmax(0, 1fr) minmax(0, .8fr) minmax(0, 1fr); }
+.table-row.is-selected { box-shadow: inset 3px 0 0 #2997ff; background: #171b22; }
+.table-row small { margin-left: 6px; color: #64b5ff; font-size: 12px; font-weight: 600; }
+.table-row strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+@media (max-width: 960px) {
+  .mission-control-deck { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .mission-control-site, .mission-control-date { grid-column: auto; grid-row: auto; }
+  .mission-control-period { grid-column: 1; grid-row: auto; justify-content: flex-start; }
+  .mission-control-deck .view-results { grid-column: 2; grid-row: auto; }
+  .mission-control-secondary { grid-row: auto; }
+}
+@media (max-width: 760px) {
+  .mission-control-deck { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .mission-control-site, .mission-control-date { grid-column: auto; }
+  .mission-control-period { grid-column: 1 / -1; }
+  .mission-control-deck .view-results { grid-column: 1 / -1; }
+  .table-head, .table-row { min-width: 640px; }
+}
+@media (max-width: 420px) {
+  .mission-control-deck { grid-template-columns: minmax(0, 1fr); }
+  .mission-control-site, .mission-control-date, .mission-control-period { grid-column: 1; }
+}
+
+/* Zoomed in, the Moon stays a round window instead of a square crop. */
+.moon.is-round canvas { border-radius: 50%; }
+@media (max-width: 760px) {
+  /* 좁은 화면에서는 도구가 달과 지점 이름을 가려서 숨긴다. 묶음을 누르면 확대된다. */
+  .mission-canvas .moon-tools { display: none; }
+}

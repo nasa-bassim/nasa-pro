@@ -165,6 +165,8 @@ export const Moon3D = memo(function Moon3D({
   onSelect,
   onSelectColumn,
   onReady,
+  introToPole,
+  roundWindow,
   language,
 }: {
   columns: MapColumn[];
@@ -174,6 +176,10 @@ export const Moon3D = memo(function Moon3D({
   onSelectColumn?: (no: number) => void;
   // Lets the parent wait for the first rendered Moon frame before opening dependent UI.
   onReady?: () => void;
+  // 첫 화면이 그려진 뒤 후보지가 모인 남극으로 돌아간다.
+  introToPole?: boolean;
+  // 확대했을 때 달을 네모가 아닌 둥근 창으로 보여 주고, 창 밖의 지점 표시는 숨긴다.
+  roundWindow?: boolean;
   language: Language;
 }) {
   const t = copy[language];
@@ -273,6 +279,21 @@ export const Moon3D = memo(function Moon3D({
     onReady?.();
   }, [failed, onReady, size, textures]);
 
+  // 첫 화면이 그려지면 후보지가 모인 남극으로 한 번 돌아간다. 타이머로 한 박자 늦춰,
+  // 개발 모드의 이펙트 재실행이나 언마운트에 애니메이션이 끊기지 않게 한다.
+  const ready = size > 0 && (failed || textures >= 2);
+  const introDone = useRef(false);
+  useEffect(() => {
+    if (!introToPole || !ready || introDone.current) return;
+    const id = window.setTimeout(() => {
+      introDone.current = true;
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) setView(POLE);
+      else animateTo(POLE, 1400);
+    }, 300);
+    return () => window.clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [introToPole, ready]);
+
   const marks = useMemo(() => {
     const out: Mark[] = SITES.map((s) => ({
       key: s.slug,
@@ -311,6 +332,7 @@ export const Moon3D = memo(function Moon3D({
   for (const mk of marks) {
     const s = projectToScreen(m, view.zoom, mk.world);
     if (!s.visible) continue;
+    if (roundWindow && s.x * s.x + s.y * s.y > 0.97 * 0.97) continue;
     const g = groups.find((o) => Math.hypot((o.x - s.x) * half, (o.y - s.y) * half) < CLUSTER_PX);
     if (g) g.members.push(mk);
     else groups.push({ x: s.x, y: s.y, members: [mk] });
@@ -374,7 +396,7 @@ export const Moon3D = memo(function Moon3D({
     );
 
   return (
-    <div className={`moon${expanded ? ' is-expanded' : ''}`} ref={wrapRef}>
+    <div className={`moon${expanded ? ' is-expanded' : ''}${roundWindow ? ' is-round' : ''}`} ref={wrapRef}>
       <div className="moon-heading"><div><strong>{t.moonTitle}</strong><span>{t.moonHelp}</span></div>
         <button type="button" aria-pressed={expanded} onClick={() => setExpanded((v) => !v)}>{expanded ? t.collapse : t.expand}</button>
       </div>
