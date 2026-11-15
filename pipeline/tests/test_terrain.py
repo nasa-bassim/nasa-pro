@@ -96,6 +96,7 @@ def test_horizon_file_shape(filename: str) -> None:
     assert (doc["lat"], doc["lon_e"]) == (site.lat, site.lon_e)
     keys = {"center"} | {f"{name}_{km}" for name in BEARINGS for km in OFFSETS_KM}
     assert set(doc["points"]) == keys
-    for profile in doc["points"].values():
-        assert len(profile) == 360
+    for name, profile in doc["points"].items():
+        expected = round(360 / doc["step_deg"]) if name == "center" else 360
+        assert len(profile) == expected
         assert all(-10.0 < h < 45.0 for h in profile)

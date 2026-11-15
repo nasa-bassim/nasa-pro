@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "model": "nasa-ibm-ai4science/Ice-Prospectivity-NASA-IBM-Lunar-Foundation-Model",
+  "modelRevision": "fb0510d0d676ae7bfae9acd88219b05449c769ee",
+  "dataset": "nasa-ibm-ai4science/Sombench-Ice-Prospectivity-Regression",
+  "datasetRevision": "78040503ceaa68107829f48114774112e8ee940d",
+  "generatedAt": "2026-11-14T15:47:13.559784+00:00",
+  "resolutionM": 240,
+  "method": "checkpoint-inference",
+  "codeRevision": "d54c67aad513cb9daca444afa425cfb278e4fbf8",
+  "device": "cpu",
+  "torchVersion": "2.12.1",
+  "sites": [
+    {
+      "slug": "im-1",
+      "lat": -80.13,
+      "lonE": 1.44,
+      "patch": "patch_0000_0005_S_80S",
+      "row": 16,
+      "col": 17,
+      "status": "ok",
+      "score": 0.081413,
+      "datasetSplit": "train",
+      "inputSha256": {
+        "ASP_SIN_COS": "0fbeb9a75bc5dd44e8da10f25694063bde67e0d921fe141979608793f8522786",
+        "CUR": "a22094f92589404b1c45a2f15e7fa3e1248eee6464c3fb054ac9b019fb16b408",
+        "DICE": "081d337c9df39446da45ea980df8289088cf0ce03a6033e4f65b11b975084136",
+        "LPSR": "b28ccc0ed2baa37184a864f6afe375f0db25fc31eae6e8bbc3c3954f5c5f9d12",
+        "LPSR_DEN": "5e4546b85fff08411b775b481e169e563a875043bfcbe361d206fbdd627a1a7f",
+        "LPSR_DIS": "408c176216416901c9d363d33c50f2d7627f58277e9c5982819485f0574f0b85",
+        "SLOPE": "95619ee5227cc19d8845ed3074dad85b920ab3d1209deb76ee09edd7f91901e1",
+        "TMAX": "854eec13217aa21b4277f9bda4bba7ec390b679e88d9e039cbcefdac2f946f07"
+      },
+      "validInputFraction": 0.959854
+    },
+    {
+      "slug": "mp2",
+      "lat": -86.0265,
+      "lonE": 2.758,
+      "patch": "patch_0002_0005_S_80S",
+      "row": 252,
+      "col": 10,
+      "status": "ok",
+      "score": 0.546278,
+      "datasetSplit": "train",
+      "inputSha256": {
+        "ASP_SIN_COS": "3bd11381e724491fddff6dac449ec501646a4e8560aa6d5e43b5b04808a69cf9",
+        "CUR": "3d7117ee6d623dcb11fb146acc9b1ca03e791ae6f45625ad34e88026816d4090",
+        "DICE": "b95abfd6279c039a321a9dad99978766e3209e7bd44c47b678b0ed8d475334c9",
+        "LPSR": "061c4ba670055806e98aa2536dbc05274b35323169cfba001039493bfe960509",
+        "LPSR_DEN": "0fb23df42adb556d2cf10f5f83470c65136961619b193058bd3d51cac4413111",
+        "LPSR_DIS": "15dd2d3e4965466ec806efcb561a0bf8cb4f0be93bf105b9ffb5cbf0ca79fd58",
+        "SLOPE": "c1ae2f5cb8e4e5d1ad6372aabeb936e835b74327eed282b6c423e6db173b9d0c",
+        "TMAX": "836bb35b47fc01d4285a96fa1ca0f4da694b12106893387a11f4b750e17b5177"
+      },
+      "validInputFraction": 1.0
+    },
+    {
+      "slug": "im-2",
+      "lat": -84.78,
+      "lonE": 29.13,
+      "patch": "patch_0002_0006_S_80S",
+      "row": 177,
+      "col": 51,
+      "status": "ok",
+      "score": 0.343755,
+      "datasetSplit": "train",
+      "inputSha256": {
+        "ASP_SIN_COS": "644ab4de0a2dc953ed730a097dc3ea924915e13c91774f81f95537b628dc89ea",
+        "CUR": "a170ee2bd348edf546f03188aa2c6474ceab33b4e7fc80a6cf0cc63b9317f558",
+        "DICE": "9cfdc78c294206f5d4f6da5faf9307372ce9fc7235a5cace2cc962f53e4e1949",
+        "LPSR": "287638fc08ee385f5287be713da012f331e3a973d8a474fbef8e16205ad8d549",
+        "LPSR_DEN": "803f950b8e18c1e9e295eb4c0c425ef419e4ee3901756ec81b5f0d81ca216026",
+        "LPSR_DIS": "9639be80a0b4c0a9540c1965c98920a2f4eaa4b23a2d99ef5999f353369b3667",
+        "SLOPE": "40e2d00824b3726a69b828cd0a439fbe699046e43f687db60553889073fa0ff4",
+        "TMAX": "72a487d569cc7ce05ab81324926f426449f2cffbc9ed07edb549dcfba801264f"
+      },
+      "validInputFraction": 1.0
+    },
+    {
+      "slug": "gr2",
+      "lat": -89.0073,
+      "lonE": -94.7636,
+      "patch": "patch_0004_0004_S_80S",
+      "row": 252,
+      "col": 117,
+      "status": "ok",
+      "score": 0.296405,
+      "datasetSplit": "train",
+      "inputSha256": {
+        "ASP_SIN_COS": "12fbf320ac998aa7ad8908cbf4af5b39ae0df917402ad0ba1aad658ef023e3d5",
+        "CUR": "583500a664628771639fe78fa794992bc5e251856aaabeeb908ad39c29fe0d5d",
+        "DICE": "2f90d8b7bd6fcf3ce81e4a7dd153c51a71e62fefe93e3f76ccdf26a188e8c0f9",
+        "LPSR": "e1960459d5153cad450142454e30b89214bc85fb4f0a5f19fa76a99eaa59138f",
+        "LPSR_DEN": "ee6e09e881e3d66c3ce5c172848d6ca911d32eb2fe8f8425da9ccde263d1c09c",
+        "LPSR_DIS": "f38d23ff7b3d30c3df8ca689cb2dfaeeed2203fdcd0747f48cf78804dc8fdc6c",
+        "SLOPE": "a661ede09255b3d5b8e9f7b435842dc450038cfaf4dc65b1bb24df0bed2d1ff8",
+        "TMAX": "d6f63dc630443a98b32448fc7a916c0eee1dabd664864c3058e20b35636588b7"
+      },
+      "validInputFraction": 1.0
+    },
+    {
+      "slug": "cr1",
+      "lat": -89.4679,
+      "lonE": -137.411,
+      "patch": "patch_0005_0004_S_80S",
+      "row": 35,
+      "col": 197,
+      "status": "ok",
+      "score": 0.486755,
+      "datasetSplit": "train",
+      "inputSha256": {
+        "ASP_SIN_COS": "c6979f813a788134a0d49431b75005bbfc2873c11c285c50176b12c76322ff5b",
+        "CUR": "f048ac5338fc437bfd6a961109d454e26f4304203f9bd3a13598e0af60655c7d",
+        "DICE": "e7b1ece69ba15aee1b298f57e192027510f3ebbe85726c80cd6e8677c426be74",
+        "LPSR": "ff88e97735b92c2426a6bba49d14632153ea9ed083c8a3710419b114e65a36c4",
+        "LPSR_DEN": "40e5ff0963a009ddc3046a7260dd3ec47c761634774eb77dded68a245edf152b",
+        "LPSR_DIS": "b88a092c5250c1228edd410965ed99b0ed2e5877ae7c490d3ff649dbe0cff211",
+        "SLOPE": "a60dc64fb1dd4d5090123a2e11c1cbb597eb03ee39feec6c1ad0b90ff7bb5736",
+        "TMAX": "70e85e6a7bcc4f048b4cbbbcc861033e7ee54ca341830cc5f5099241204188d7"
+      },
+      "validInputFraction": 1.0
+    },
+    {
+      "slug": "sr1",
+      "lat": -89.7755,
+      "lonE": -156.448,
+      "patch": "patch_0005_0004_S_80S",
+      "row": 12,
+      "col": 231,
+      "status": "ok",
+      "score": 0.058602,
+      "datasetSplit": "train",
+      "inputSha256": {
+        "ASP_SIN_COS": "c6979f813a788134a0d49431b75005bbfc2873c11c285c50176b12c76322ff5b",
+        "CUR": "f048ac5338fc437bfd6a961109d454e26f4304203f9bd3a13598e0af60655c7d",
+        "DICE": "e7b1ece69ba15aee1b298f57e192027510f3ebbe85726c80cd6e8677c426be74",
+        "LPSR": "ff88e97735b92c2426a6bba49d14632153ea9ed083c8a3710419b114e65a36c4",
+        "LPSR_DEN": "40e5ff0963a009ddc3046a7260dd3ec47c761634774eb77dded68a245edf152b",
+        "LPSR_DIS": "b88a092c5250c1228edd410965ed99b0ed2e5877ae7c490d3ff649dbe0cff211",
+        "SLOPE": "a60dc64fb1dd4d5090123a2e11c1cbb597eb03ee39feec6c1ad0b90ff7bb5736",
+        "TMAX": "70e85e6a7bcc4f048b4cbbbcc861033e7ee54ca341830cc5f5099241204188d7"
+      },
+      "validInputFraction": 1.0
+    }
+  ],
+  "checkpointSha256": "94a64dfe7e8c892dc687ef1eeea88044eb43b2b91263151532d7a68ac0d1bbee"
+}

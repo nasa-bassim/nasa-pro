@@ -92,7 +92,8 @@ describe('judge / evaluate / summarize', () => {
 
   it('암흑 허용치를 넘으면 dark, 동시 가시가 절반에 못 미치면 overlap', () => {
     expect(judge(always.sun, always.earth, t0, 3)).toMatchObject({ ok: true, reasons: [] });
-    expect(judge(dip.sun, dip.earth, t0, 7)).toMatchObject({ ok: false, darkHours: 30, reasons: ['dark'] });
+    expect(judge(dip.sun, dip.earth, t0, 7)).toMatchObject({ ok: false, reasons: ['dark'] });
+    expect(judge(dip.sun, dip.earth, t0, 7).darkHours).toBeCloseTo(29.973, 6);
     const never = fake('earth', 24 * 40, () => false);
     expect(judge(always.sun, never, t0, 3).reasons).toEqual(['overlap']);
   });

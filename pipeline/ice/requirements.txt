@@ -1,0 +1,1 @@
+ni_lfm @ git+https://github.com/NASA-IMPACT/NASA-IBM-Lunar-Foundation-Model.git@d54c67aad513cb9daca444afa425cfb278e4fbf8

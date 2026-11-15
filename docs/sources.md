@@ -13,6 +13,14 @@
 
 # AI 사용 기록
 
+얼음 탐사 근거: [NASA–IBM Ice Prospectivity 모델](https://huggingface.co/nasa-ibm-ai4science/Ice-Prospectivity-NASA-IBM-Lunar-Foundation-Model)
+(Apache-2.0)과 [SomBench 극지 데이터](https://huggingface.co/datasets/nasa-ibm-ai4science/Sombench-Ice-Prospectivity-Regression)
+(CC BY 4.0, NASA–IBM AI4Science / Fraccaro et al. 2026 / Patil et al. 2026 /
+Coyan et al. 2025; 원자료 LOLA, Diviner, USGS)를 사용했다.
+`pipeline/ice/generate.py`가 실제 추론한 파생 결과를 `web/public/evidence/ice.json`에 저장한다.
+전문가 유망도 지도의 모사 결과이며 얼음 관측·매장량·착륙 안전성으로 해석하지 않는다.
+버전과 입력 해시는 생성물, 재현 절차는 `pipeline/ice/README.md`에 기록한다.
+
 | 날짜 | 도구 | 사용 내용 |
 |---|---|---|
 | 2026-11-01 | Claude Code | 저장소 구조, Horizons 파서, CI 작성 |
@@ -21,3 +29,12 @@
 | 2026-11-14 | Claude Code | 비교 화면 디자인 개편(어두운 바탕, 낮·밤 띠 강조), 돌려 볼 수 있는 3D 달과 지점 표시 추가(WebGL, 고도 자료에서 경사 지도 계산) |
 | 2026-11-14 | Claude Code | 가장 유리한 시작 시각 찾기, 위치·일정 오차 견고성 평가(주변 4개 지점 × 일정 5개 시각을 같은 임무 조건으로 재평가) 추가 |
 | 2026-11-14 | Claude Code | LOLA 고도 자료로 지형 지평선 계산(pipeline/terrain.py)과 웹 가시성 계산 반영, 지형 가림 반영 스위치 추가 |
+
+## 정밀 가시성 계산 추가 자료
+
+- NASA PGDA [High-Resolution LOLA Topography](https://pgda.gsfc.nasa.gov/products/78),
+  `Site04_final_adj_5mpp_surf.tif` (Barker et al. 2021): Shackleton Rim 중심의 5m 지역 고도.
+  기존 LOLA 240m 광역 자료와 결합해 250km, 방위 0.1° 지평선을 생성했다.
+  5m는 격자 간격이며 실제 측정 정확도가 아니다. 주변 오차 평가 점은 기존 자료를 유지한다.
+- `web/public/refined/`: 원본과 동일한 지점/기간의 실제 Horizons 5분·1분 선택 구간 관측.
+  경험적 ±0.25° 선별 여유와 이웃 구간 확장을 사용한다. 이는 정밀도 보증이 아니다.

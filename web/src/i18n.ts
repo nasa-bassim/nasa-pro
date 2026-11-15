@@ -290,3 +290,19 @@ export const duration = (ms: number, language: Language) => {
 };
 
 export const locale = (language: Language) => (language === 'ko' ? 'ko-KR' : 'en-US');
+
+// Event countdowns must not round a future event down to "0.0 days".
+export function eventDuration(days: number, language: Language): string {
+  const ms = days * 86_400_000;
+  if (ms < 60_000) return language === 'ko' ? '1분 미만' : 'Less than 1 min';
+  if (ms < 3_600_000) {
+    const minutes = Math.floor(ms / 60_000);
+    return language === 'ko' ? `약 ${minutes}분` : `About ${minutes} min`;
+  }
+  if (ms < 86_400_000) {
+    const hours = Math.floor(ms / 3_600_000);
+    const minutes = Math.floor((ms % 3_600_000) / 60_000);
+    return language === 'ko' ? `약 ${hours}시간 ${minutes}분` : `About ${hours}h ${minutes}m`;
+  }
+  return `${days.toFixed(1)}${language === 'ko' ? '일' : ' days'}`;
+}
