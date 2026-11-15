@@ -67,3 +67,33 @@ for (const [path, module] of Object.entries(realRefinements)) {
     expect(f.longestDarkHours).toBeLessThanOrEqual(days * 24);
   });
 }
+
+it('calculates maximum elevation at clipped window boundaries without requiring samples inside', () => {
+  const rising = eph([[0,0,-1],[1,0,1]]);
+  const falling = eph([[0,0,1],[1,0,-1]]);
+  expect(stats(rising, start + .75 * H, .15 / 24).maxElevationAboveHorizon).toBeCloseTo(.53);
+  expect(stats(falling, start + .1 * H, .15 / 24).maxElevationAboveHorizon).toBeCloseTo(.53);
+});
+it('includes a visible valley between two invisible terrain samples', () => {
+  const data = eph([[0,0,1],[1,2,1]]);
+  data.horizon = Array(360).fill(2); data.horizon[1] = 0;
+  const result = stats(data, start, 1 / 24);
+  expect(result.fraction).toBe(.5);
+  expect(result.maxElevationAboveHorizon).toBeCloseTo(.73);
+});
+it('distinguishes absent daylight, tangency, a zero plateau and a partially visible solar disk', () => {
+  expect(stats(eph([[0,0,-1],[1,0,-1]]), start, 1 / 24).maxElevationAboveHorizon).toBeNull();
+  expect(stats(eph([[0,0,-1],[1,0,0],[2,0,-1]]), start, 2 / 24).maxElevationAboveHorizon).toBeNull();
+  expect(stats(eph([[0,0,0],[1,0,0]]), start, 1 / 24).maxElevationAboveHorizon).toBeCloseTo(-.27);
+  expect(stats(eph([[0,0,.1],[1,0,.1]]), start, 1 / 24).maxElevationAboveHorizon).toBeCloseTo(-.17);
+});
+it('Apollo 11 regression: the final 35 minutes of daylight must not report no sunlight', () => {
+  const data = originals['../../public/data/apollo-11_sun.json']!.default;
+  const t0 = Date.parse('2026-11-08T01:59:00Z');
+  const result = stats(data, t0, 7);
+  expect(result.fraction).toBeGreaterThan(0);
+  expect(result.maxElevationAboveHorizon).not.toBeNull();
+  const a = data.samples.find((s) => s.t === '2026-11-15T01:00:00Z')!;
+  const b = data.samples.find((s) => s.t === '2026-11-15T02:00:00Z')!;
+  expect(result.maxElevationAboveHorizon).toBeCloseTo(a.el + (b.el - a.el) * 59 / 60, 8);
+});
