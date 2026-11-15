@@ -8,6 +8,7 @@ Lunar Navigator helps users compare candidate lunar landing sites by answering a
 
 The project was created by **Nasa-bbajim** for the **2026 NASA International Space Apps Challenge**. It is an educational and preliminary planning tool, not a flight-certified landing-safety system.
 
+- [Notion Project Documentation](https://app.notion.com/p/LUNAR-NAVIGATOR-731e77c562ec823e9589017a222c9155?source=copy_link)
 - [NASA Space Apps team page](https://www.spaceappschallenge.org/2026/find-a-team/nasa-bbajim/?tab=project)
 - [Source repository](https://github.com/nasa-bassim/nasa-pro)
 
@@ -53,12 +54,12 @@ The precomputed dataset covers **2026-11-01 through 2027-05-01** at **one-hour i
 
 For each selected site and time window, Lunar Navigator:
 
-1. loads Sun and Earth observer ephemerides from precomputed Horizons responses or the backend proxy;
-2. compares each body's elevation with either the geometric horizon or the LOLA-derived terrain horizon for its azimuth;
-3. marks samples with sunlight, Earth contact, and simultaneous visibility;
-4. calculates total overlap, sunlight share, and longest continuous darkness;
-5. evaluates nearby positions and shifted start times under the same mission assumptions; and
-6. exposes the individual metrics and caveats used by the comparison.
+1. Loads Sun and Earth observer ephemerides from precomputed Horizons responses or the backend proxy.
+2. Compares each body's elevation with either the geometric horizon or the LOLA-derived terrain horizon for its azimuth.
+3. Marks samples with sunlight, Earth contact, and simultaneous visibility.
+4. Calculates total overlap, sunlight share, and longest continuous darkness.
+5. Evaluates nearby positions and shifted start times under the same mission assumptions.
+6. Exposes the individual metrics and caveats used by the comparison.
 
 Terrain horizons are generated for each azimuth degree from a 240 m/pixel LOLA south-polar raster, using a nominal observer height of 2 m and searching terrain out to 250 km.
 
