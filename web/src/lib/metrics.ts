@@ -146,7 +146,7 @@ export interface WindowStats {
   fraction: number; // 경계 사이의 가시 구간 길이 / 관찰 기간
   sampleCount: number;
   longestDarkHours: number; // sunlit=false 연속 최대 길이 (시간)
-  maxElevationAboveHorizon: number | null; // 보이는 샘플 중 max(el - h)
+  maxElevationAboveHorizon: number | null; // 가시 구간에서 max(el - h), 창 경계의 극한 포함
 }
 
 function windowSamples(eph: Ephemeris, t0: number, days: number): Sample[] {
@@ -159,14 +159,22 @@ function windowSamples(eph: Ephemeris, t0: number, days: number): Sample[] {
 
 export function stats(eph: Ephemeris, t0: number, days: number): WindowStats {
   const samples = windowSamples(eph, t0, days);
-  let maxEl: number | null = null;
-  for (const s of samples) {
-    if (isVisible(s, eph.body, eph.horizon)) {
-      const above = s.el - horizonHeight(s.az, eph.horizon);
-      if (maxEl === null || above > maxEl) maxEl = above;
-    }
-  }
   const end = t0 + days * 86400_000;
+  let maxEl: number | null = null;
+  const ns = nodes(eph);
+  for (let i = 0; i + 1 < ns.length; i++) {
+    const a = ns[i]!, b = ns[i + 1]!;
+    const left = Math.max(t0, a.t), right = Math.min(end, b.t);
+    if (right <= left) continue;
+    const at = (t: number) => a.f + (b.f - a.f) * (t - a.t) / (b.t - a.t);
+    const fa = at(left), fb = at(right);
+    // Positive-length visibility only: an isolated zero is a tangency, while
+    // a zero plateau is visible under the existing >= 0 definition.
+    if (!(fa > 0 || fb > 0 || (fa === 0 && fb === 0))) continue;
+    // f is linear between horizon knots, and f - radius is el - horizon.
+    const above = Math.max(fa, fb) - BODY_RADIUS_DEG[eph.body];
+    if (maxEl === null || above > maxEl) maxEl = above;
+  }
   const intervals = visibleIntervals(eph);
   let cursor = t0, longestMs = 0;
   for (const r of intervals) {
