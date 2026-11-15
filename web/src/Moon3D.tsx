@@ -18,7 +18,7 @@ import {
   siteVector,
 } from './lib/globe';
 import type { Quat, Vec3 } from './lib/globe';
-import { SITES } from './sites';
+import { localizedSiteName, SITES, shortSiteName } from './sites';
 import { copy } from './i18n';
 import type { Language } from './i18n';
 
@@ -121,12 +121,6 @@ const LABEL_SIDE: Record<string, Side> = {
   gr2: 'left',
 };
 
-// 달 위 레이블에 쓰는 짧은 이름. 없으면 slug를 대문자로 쓴다 (IM-2, SR1 …).
-const SHORT_NAME: Record<string, string> = {
-  'chandrayaan-3': 'Chandrayaan-3',
-  'apollo-11': 'Apollo 11',
-};
-
 interface MapColumn {
   site: string; // 큐레이션 slug 또는 'custom'
   lat?: number;
@@ -145,11 +139,11 @@ interface Mark {
 
 const pct = (v: number) => `${50 + 50 * v}%`;
 
-function SelectionBadge({ cols, selectedColumnNo }: { cols: number[]; selectedColumnNo?: number }) {
+function SelectionBadge({ cols, selectedColumnNo, language }: { cols: number[]; selectedColumnNo?: number; language: Language }) {
   if (cols.length === 0) return null;
   return <span
     className={`selection-badge${selectedColumnNo !== undefined && cols.includes(selectedColumnNo) ? ' is-selected' : ''}`}
-    aria-label={`${cols.length}개 시나리오에서 선택됨`}
+    aria-label={language === 'ko' ? `${cols.length}개 시나리오에서 선택됨` : `Selected in ${cols.length} scenarios`}
   >✓{cols.length > 1 ? ` ${cols.length}` : ''}</span>;
 }
 
@@ -298,8 +292,8 @@ export const Moon3D = memo(function Moon3D({
     const out: Mark[] = SITES.map((s) => ({
       key: s.slug,
       slug: s.slug,
-      label: SHORT_NAME[s.slug] ?? s.slug.toUpperCase(),
-      title: s.name,
+      label: shortSiteName(s.slug, language),
+      title: localizedSiteName(s, language),
       world: siteVector(s.lat, s.lon_e),
       cols: columns.flatMap((c, i) => (c.site === s.slug ? [i + 1] : [])),
       side: LABEL_SIDE[s.slug] ?? 'right',
@@ -439,7 +433,7 @@ export const Moon3D = memo(function Moon3D({
               </button>
               <span className="marker-label">
                 {g.members.length} {t.sites} · {t.tapToZoom}
-                <SelectionBadge cols={cols} selectedColumnNo={selectedColumnNo} />
+                <SelectionBadge cols={cols} selectedColumnNo={selectedColumnNo} language={language} />
               </span>
             </span>
           );
@@ -448,7 +442,7 @@ export const Moon3D = memo(function Moon3D({
         const label = (
           <span className="marker-label">
             {first.label}
-            <SelectionBadge cols={first.cols} selectedColumnNo={selectedColumnNo} />
+            <SelectionBadge cols={first.cols} selectedColumnNo={selectedColumnNo} language={language} />
           </span>
         );
         if (first.slug === null)

@@ -47,7 +47,7 @@ const copy = {
     hours: (h: number) => `${h}시간`,
     dayUnit: (d: string) => `${d}일`,
     ok: '충족',
-    dark: (h: number) => `암흑 ${h.toFixed(1)}h`,
+    dark: (h: number) => `암흑 ${h.toFixed(1)}시간`,
     overlap: (p: number) => `가시 ${p.toFixed(1)}%`,
     outOfRange: '계산 범위 밖',
     tableLabel: '위치와 일정 오차별 임무 조건 충족 여부',
