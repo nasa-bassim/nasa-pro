@@ -17,7 +17,7 @@ import type { T0Field } from './lib/t0Field';
 import type { Ephemeris } from './lib/ephemeris';
 import { eventMetric, stats, timeline } from './lib/metrics';
 import { tickStepMs } from './lib/timelineTicks';
-import { SITES, shortSiteName } from './sites';
+import { localizedSiteName, SITES, shortSiteName } from './sites';
 import { copy, duration, eventDuration } from './i18n';
 import type { Language } from './i18n';
 
@@ -559,7 +559,7 @@ function Column({
           {index}
         </span>
         <h2 className="sr-only">
-          {ko ? `${index}번째 후보지` : `Scenario ${index}`}, {isCustom ? t.customCoordinates : site?.name}
+          {ko ? `${index}번째 후보지` : `Scenario ${index}`}, {isCustom ? t.customCoordinates : site ? localizedSiteName(site, language) : ''}
         </h2>
         <select
           className="site-select"
@@ -569,7 +569,7 @@ function Column({
         >
           {SITES.map((s) => (
             <option key={s.slug} value={s.slug}>
-              {s.name}
+              {localizedSiteName(s, language)}
             </option>
           ))}
           <option value={CUSTOM}>{t.customCoordinates}</option>
@@ -1052,7 +1052,7 @@ export default function App() {
           <nav className="landing-nav" aria-label={text.navigation}>
             <div className="landing-brand">
               <span className="brand-orbit" aria-hidden="true" />
-              <span>LUNAR NAVIGATOR</span>
+              <span>{text.brandName}</span>
             </div>
             <div className="nav-actions"><button className="language-switch" onClick={changeLanguage}>{text.languageSwitch}</button></div>
           </nav>
@@ -1076,7 +1076,7 @@ export default function App() {
       ) : (
         <main className={`workspace-page${moonFlight ? ' is-moon-handoff' : ''}`}>
           <nav className="workspace-nav" aria-label={text.workspaceNavigation}>
-            <button className="workspace-brand" onClick={() => navigate('landing')}><span className="brand-orbit" aria-hidden="true" /> LUNAR NAVIGATOR</button>
+            <button className="workspace-brand" onClick={() => navigate('landing')}><span className="brand-orbit" aria-hidden="true" /> {text.brandName}</button>
             <div className="nav-actions"><button className="language-switch" onClick={changeLanguage}>{text.languageSwitch}</button></div>
           </nav>
           <div className="workspace-flow" role="navigation" aria-label={text.workspaceNavigation}>
@@ -1103,7 +1103,7 @@ export default function App() {
                   onClick={() => setSelectedId(column.id)}
                 >
                   <b>#{index + 1}</b>
-                  <span className="scenario-chip-site">{column.site === CUSTOM ? text.customSite : shortSiteName(column.site)}</span>
+                  <span className="scenario-chip-site">{column.site === CUSTOM ? text.customSite : shortSiteName(column.site, language)}</span>
                   <span>{shortScenarioDate(column.t0, language)}</span>
                 </button>
               ))}
@@ -1115,7 +1115,7 @@ export default function App() {
                 disabled={!selectedColumn}
                 onChange={(event) => changeSelectedSite(event.target.value)}
               >
-                {SITES.map((site) => <option key={site.slug} value={site.slug}>{site.name}</option>)}
+                {SITES.map((site) => <option key={site.slug} value={site.slug}>{localizedSiteName(site, language)}</option>)}
                 {selectedColumn?.site === CUSTOM ? <option value={CUSTOM}>{text.customSite}</option> : null}
               </select>
             </label>
@@ -1147,7 +1147,7 @@ export default function App() {
                 <summary>{text.editScenarios}</summary>
                 <div className="mission-site-editor-panel">
                   <select value={newSite} onChange={(event) => setNewSite(event.target.value)} aria-label={text.siteToAdd}>
-                    {SITES.map((site) => <option key={site.slug} value={site.slug}>{site.name}</option>)}
+                    {SITES.map((site) => <option key={site.slug} value={site.slug}>{localizedSiteName(site, language)}</option>)}
                     <option value={CUSTOM}>{text.customCoordinates}</option>
                   </select>
                   <button type="button" disabled={!canAdd} onClick={() => addColumn(newSite)}>{text.addSite}</button>
@@ -1166,7 +1166,7 @@ export default function App() {
           <div className={`lunar-pulse-stage${evidenceOpen ? ' is-open' : ''}`} aria-live="polite">
             {evidenceOpen && explorationInfo ? (
               <>
-                <span>{text.siteInsight}</span><strong>{explorationInfo.name}</strong>
+                <span>{text.siteInsight}</span><strong>{localizedSiteName(explorationInfo, language)}</strong>
                 {explorationTimeline ? <LunarPulse tl={explorationTimeline} language={language} /> : <p>{text.loadingSiteInsight}</p>}
                 <div className="site-insight-actions">
                   {selectedColumn && selectedColumn.site !== explorationInfo.slug ? (
@@ -1220,7 +1220,7 @@ export default function App() {
               {columns.map((c, index) => {
                 const site = SITES.find((item) => item.slug === c.site);
                 const key = columnKey(c); const record = key ? data[key] : undefined;
-                const name = site?.name ?? text.customSite;
+                const name = site ? localizedSiteName(site, language) : text.customSite;
                 const label = `#${index + 1} ${name}`;
                 const start = shortScenarioDate(c.t0, language);
                 const selected = c.id === selectedColumn?.id;
