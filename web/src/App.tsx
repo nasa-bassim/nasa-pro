@@ -23,6 +23,18 @@ import type { Language } from './i18n';
 
 const HOUR_MS = 3600_000;
 
+function shortScenarioDate(value: string, language: Language): string {
+  const date = new Date(parseT0Input(value));
+  return new Intl.DateTimeFormat(language === 'ko' ? 'ko-KR' : 'en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'UTC',
+  }).format(date);
+}
+
 // three.js and the lunar textures stay out of the first application bundle.
 // The map loads after the workspace shell has become interactive.
 const Moon3D = lazy(() => import('./Moon3D').then(({ Moon3D }) => ({ default: Moon3D })));
@@ -148,16 +160,13 @@ const PeriodPicker = memo(function PeriodPicker({
   label: string;
   onChange: (days: number) => void;
 }) {
-  const [pendingDays, setPendingDays] = useState<number | null>(null);
-  const visualDays = pendingDays ?? days;
+  const [visualDays, setVisualDays] = useState(days);
   const choose = (nextDays: number) => {
     if (nextDays === visualDays) return;
-    // Commit the selected pill urgently, then let the duration-wide analysis yield to it.
-    setPendingDays(nextDays);
-    startTransition(() => {
-      onChange(nextDays);
-      setPendingDays(null);
-    });
+    // Paint the selected pill first. The expensive duration-wide analysis starts
+    // on the next frame, so it cannot delay the button's visual feedback.
+    setVisualDays(nextDays);
+    window.requestAnimationFrame(() => startTransition(() => onChange(nextDays)));
   };
   return (
     <span className="d-preset" role="group" aria-label={label}>
@@ -771,9 +780,7 @@ export default function App() {
   });
   const [selectedId, setSelectedId] = useState(DEFAULT_COLUMNS[0]!.id);
   const [explorationSite, setExplorationSite] = useState<string | null>(null);
-  const [tutorialStep, setTutorialStep] = useState(0);
-  const [isGuideVisible, setGuideVisible] = useState(true);
-  const [showComparison, setShowComparison] = useState(false);
+  const [missionMoonReady, setMissionMoonReady] = useState(false);
   const [workspaceSection, setWorkspaceSection] = useState<'setup' | 'results'>('setup');
   const [view, setView] = useState<'landing' | 'workspace'>(() =>
     window.location.hash === '#workspace' ? 'workspace' : 'landing'
@@ -870,8 +877,12 @@ export default function App() {
   const ignoreMapAdd = useCallback((_site: string) => undefined, []);
   const selectExplorationSite = useCallback((site: string) => {
     setExplorationSite(site);
-    setGuideVisible(false);
   }, []);
+  const selectScenarioFromMoon = useCallback((no: number) => {
+    const column = columns[no - 1];
+    if (!column) return;
+    setSelectedId(column.id);
+  }, [columns]);
   const selectedIndex = Math.max(0, columns.findIndex((c) => c.id === selectedId));
   const selectedColumn = columns[selectedIndex];
   const selectedKey = selectedColumn ? columnKey(selectedColumn) : null;
@@ -883,6 +894,8 @@ export default function App() {
   const explorationTimeline = explorationRecord?.status === 'ok' && explorationRecord.sun && explorationRecord.earth && explorationStart
     ? timeline(explorationRecord.sun, explorationRecord.earth, parseT0Input(explorationStart), days)
     : undefined;
+  const evidenceOpen = Boolean(explorationInfo && missionMoonReady);
+  const handleMissionMoonReady = useCallback(() => setMissionMoonReady(true), []);
   const changeLanguage = () => setLanguage((value) => value === 'ko' ? 'en' : 'ko');
   useEffect(() => {
     window.localStorage.setItem('lunar-navigator-language', language);
@@ -890,7 +903,10 @@ export default function App() {
   }, [language]);
   const navigate = (next: 'landing' | 'workspace') => {
     setView(next);
-    if (next === 'workspace') setWorkspaceSection('setup');
+    if (next === 'workspace') {
+      setWorkspaceSection('setup');
+      setMissionMoonReady(false);
+    }
     const hash = next === 'workspace' ? '#workspace' : '#home';
     window.history.pushState({ view: next }, '', hash);
     window.scrollTo({ top: 0, behavior: 'instant' });
@@ -910,6 +926,7 @@ export default function App() {
       return;
     }
     const from = { left: r.left, top: r.top, width: r.width, height: r.height };
+    setMissionMoonReady(false);
     setMoonFlight({ image, from });
     requestAnimationFrame(() => setMoonFlight((flight) => flight ? { ...flight, launching: true } : flight));
     window.setTimeout(() => {
@@ -933,7 +950,14 @@ export default function App() {
   };
 
   useEffect(() => {
-    const onPopState = () => setView(window.location.hash === '#workspace' ? 'workspace' : 'landing');
+    const onPopState = () => {
+      const next = window.location.hash === '#workspace' ? 'workspace' : 'landing';
+      setView(next);
+      if (next === 'workspace') {
+        setWorkspaceSection('setup');
+        setMissionMoonReady(false);
+      }
+    };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
@@ -982,15 +1006,14 @@ export default function App() {
         <main className={`workspace-page${moonFlight ? ' is-moon-handoff' : ''}`}>
           <nav className="workspace-nav" aria-label={text.workspaceNavigation}>
             <button className="workspace-brand" onClick={() => navigate('landing')}><span className="brand-orbit" aria-hidden="true" /> LUNAR NAVIGATOR</button>
-            <span className="workspace-label">SCENARIO WORKSPACE</span>
-            <div className="nav-actions"><button className="language-switch" onClick={changeLanguage}>{text.languageSwitch}</button><button className="workspace-back" onClick={() => navigate('landing')}>← {text.backHome}</button></div>
+            <div className="nav-actions"><button className="language-switch" onClick={changeLanguage}>{text.languageSwitch}</button></div>
           </nav>
           <div className="workspace-flow" role="navigation" aria-label={text.workspaceNavigation}>
             <button className={workspaceSection === 'setup' ? 'is-active' : ''} aria-pressed={workspaceSection === 'setup'} onClick={() => setWorkspaceSection('setup')}>{text.setupKicker}</button>
             <span aria-hidden="true" />
             <button className={workspaceSection === 'results' ? 'is-active' : ''} aria-pressed={workspaceSection === 'results'} onClick={() => setWorkspaceSection('results')}>{text.resultsKicker}</button>
           </div>
-      {workspaceSection === 'setup' ? <header className={`hero mission-canvas${explorationInfo ? ' has-exploration' : ''}`}>
+      {workspaceSection === 'setup' ? <header className={`hero mission-canvas${evidenceOpen ? ' has-exploration' : ''}`}>
         <div className="hero-text">
           <div className="product">
             <div>
@@ -1030,7 +1053,7 @@ export default function App() {
           <div className="scenario-bar">
             <div className="bar-row">
               <span className="d-label">{text.window}</span>
-              <PeriodPicker days={days} language={language} label={text.durationGroup} onChange={setDays} />
+              <PeriodPicker key={`setup-period-${days}`} days={days} language={language} label={text.durationGroup} onChange={setDays} />
             </div>
             <div className="bar-row">
               <select
@@ -1059,18 +1082,83 @@ export default function App() {
             </div>
           </div>
 
+          <div className="mission-control-deck" aria-label={text.analysisControls}>
+            <div className="mission-control-summary">
+              <span>{ko ? `${columns.length}개 시나리오` : `${columns.length} scenarios`}</span>
+              <strong>{text.selectedScenario}</strong>
+            </div>
+            <div className="mission-scenario-tabs" role="tablist" aria-label={text.selectedScenario}>
+              {columns.map((column, index) => (
+                <button
+                  key={column.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={column.id === selectedColumn?.id}
+                  className={column.id === selectedColumn?.id ? 'is-selected' : ''}
+                  onClick={() => setSelectedId(column.id)}
+                >
+                  <b>#{index + 1}</b><span>{shortScenarioDate(column.t0, language)}</span>
+                </button>
+              ))}
+            </div>
+            <label className="mission-control-date">
+              <span>{text.landingStart}</span>
+              <input
+                type="datetime-local"
+                min={T0_MIN}
+                max={T0_MAX}
+                value={selectedColumn?.t0 ?? ''}
+                disabled={!selectedColumn}
+                onChange={(event) => {
+                  if (!selectedColumn) return;
+                  const ms = parseT0Input(event.target.value);
+                  if (Number.isNaN(ms)) return;
+                  const t0 = formatT0Input(clampT0(ms, days));
+                  setColumns((items) => items.map((item) => item.id === selectedColumn.id ? { ...item, t0 } : item));
+                }}
+              />
+            </label>
+            <div className="mission-control-period">
+              <span>{text.window}</span>
+              <PeriodPicker key={`mission-period-${days}`} days={days} language={language} label={text.durationGroup} onChange={setDays} />
+            </div>
+            <button
+              type="button"
+              className="primary view-results"
+              disabled={columns.length === 0}
+              onClick={() => setWorkspaceSection('results')}
+            >
+              {ko ? `${columns.length}개 시나리오 비교하기` : `Compare ${columns.length} scenarios`}
+            </button>
+            <div className="mission-control-secondary">
+              <p className="mission-control-hint">{text.missionHint}</p>
+              <details className="mission-site-editor">
+                <summary>{text.editScenarios}</summary>
+                <div className="mission-site-editor-panel">
+                  <select value={newSite} onChange={(event) => setNewSite(event.target.value)} aria-label={text.siteToAdd}>
+                    {SITES.map((site) => <option key={site.slug} value={site.slug}>{site.name}</option>)}
+                    <option value={CUSTOM}>{text.customCoordinates}</option>
+                  </select>
+                  <button type="button" disabled={!canAdd} onClick={() => addColumn(newSite)}>{text.addSite}</button>
+                  <button type="button" onClick={() => { setColumns(DEFAULT_COLUMNS); setDays(DEFAULT_DAYS); setSelectedId(DEFAULT_COLUMNS[0]!.id); }}>{text.reset}</button>
+                </div>
+              </details>
+            </div>
+          </div>
+
+          <button className="view-results primary" onClick={() => setWorkspaceSection('results')}>{text.viewResults}</button>
+
           <aside className="data-note" aria-label={text.terrainCaveat}>
             <span>{text.dataSource}</span>
             <strong>{text.terrainCaveat}</strong>
           </aside>
-          <button className="view-results primary" onClick={() => setWorkspaceSection('results')}>{text.viewResults}</button>
         </div>
         <div className="mission-globe" ref={missionMoonRef} aria-label={text.moonTitle}>
           <Suspense fallback={<MoonLoading language={language} />}>
-            <Moon3D columns={columns} selectedSite={explorationSite ?? undefined} onSelect={selectExplorationSite} language={language} />
+            <Moon3D columns={columns} selectedSite={explorationSite ?? undefined} selectedColumnNo={selectedIndex + 1} onSelect={selectExplorationSite} onSelectColumn={selectScenarioFromMoon} onReady={handleMissionMoonReady} language={language} />
           </Suspense>
-          <div className={`lunar-pulse-stage${explorationInfo ? ' is-open' : ''}`} aria-live="polite">
-            {explorationInfo ? (
+          <div className={`lunar-pulse-stage${evidenceOpen ? ' is-open' : ''}`} aria-live="polite">
+            {evidenceOpen && explorationInfo ? (
               <>
                 <span>{text.siteInsight}</span><strong>{explorationInfo.name}</strong>
                 {explorationTimeline ? <LunarPulse tl={explorationTimeline} language={language} /> : <p>{text.loadingSiteInsight}</p>}
@@ -1078,23 +1166,6 @@ export default function App() {
             ) : <p>{text.selectSiteToExplore}</p>}
           </div>
         </div>
-        {!explorationInfo && isGuideVisible ? (
-          <aside className={`mission-guide is-step-${tutorialStep}`} aria-live="polite">
-            <span className="mission-guide-count">{tutorialStep + 1} / 3</span>
-            <h2>{[text.guideRotateTitle, text.guideSelectTitle, text.guideExpandTitle][tutorialStep]}</h2>
-            <p>{[text.guideRotateBody, text.guideSelectBody, text.guideExpandBody][tutorialStep]}</p>
-            <div className="mission-guide-actions">
-              <button type="button" className="mission-guide-skip" onClick={() => setGuideVisible(false)}>{text.guideSkip}</button>
-              <button
-                type="button"
-                className="mission-guide-next"
-                onClick={() => tutorialStep === 2 ? setGuideVisible(false) : setTutorialStep((step) => step + 1)}
-              >
-                {tutorialStep === 2 ? text.guideStart : text.guideNext}
-              </button>
-            </div>
-          </aside>
-        ) : null}
       </header> : <>
 
       <div className="comparison-heading">
@@ -1136,13 +1207,11 @@ export default function App() {
               return <button key={c.id} role="tab" aria-selected={c.id === selectedColumn?.id} className={`scenario-tab${c.id === selectedColumn?.id ? ' is-selected' : ''}`} onClick={() => setSelectedId(c.id)}>
                 <span>{ko ? `${i + 1}번째 후보지` : `${text.scenario} ${i + 1}`}</span>
                 <strong>{c.site === CUSTOM ? text.customSite : site?.name}</strong>
-                <small>{score === null ? text.calculating : (ko ? `${text.ready} ${score}%` : `${score}% ${text.ready}`)}</small>
+                <small>{score === null ? text.calculating : (ko ? `빛·통신 동시 가능 ${score}%` : `${score}% power + contact`)}</small>
               </button>;
             })}
           </div>
-          <div className="board-actions"><button onClick={() => setShowComparison((value) => !value)}>{showComparison ? text.backToDetails : text.compareNumbers}</button></div>
-          {showComparison ? (
-            <div className="comparison-table" role="region" aria-label={text.compareNumbers}>
+          <div className="comparison-table" role="region" aria-label={text.compareNumbers}>
               <div className="table-head"><span>{text.tableSite}</span><span>{text.tablePowerContact}</span><span>{text.tableLongestDark}</span><span>{text.tableRecommendation}</span></div>
               {columns.map((c, index) => {
                 const site = SITES.find((item) => item.slug === c.site);
@@ -1153,10 +1222,10 @@ export default function App() {
                 const tl = timeline(record.sun, record.earth, parseT0Input(c.t0), days);
                 const sunStats = stats(record.sun, parseT0Input(c.t0), days);
                 const recommended = comparisonReady && bestNos.has(index + 1);
-                return <button className={`table-row${recommended ? ' is-recommended' : ''}`} key={c.id} onClick={() => { setSelectedId(c.id); setShowComparison(false); }}><strong>{label}</strong><span>{duration(tl.bothVisibleMs, language)}</span><span>{duration(sunStats.longestDarkHours * HOUR_MS, language)}</span><span className={recommended ? 'table-reason is-best' : 'table-reason'}>{recommended ? text.recommendedReason : text.notRecommendedReason}</span></button>;
+                return <button className={`table-row${recommended ? ' is-recommended' : ''}`} key={c.id} onClick={() => setSelectedId(c.id)}><strong>{label}</strong><span>{duration(tl.bothVisibleMs, language)}</span><span>{duration(sunStats.longestDarkHours * HOUR_MS, language)}</span><span className={recommended ? 'table-reason is-best' : 'table-reason'}>{recommended ? text.recommendedReason : text.notRecommendedReason}</span></button>;
               })}
-            </div>
-          ) : selectedColumn ? (
+          </div>
+          {selectedColumn ? (
             <div className="selected-scenario">
               <div className="selected-scenario-label"><span>{text.selectedDetail}</span><strong>{ko ? `${selectedIndex + 1}번째 후보지` : `${text.scenario} ${selectedIndex + 1}`}</strong></div>
               <Column
@@ -1184,17 +1253,16 @@ export default function App() {
       )}
 
       <div className="results-actions"><button onClick={() => setWorkspaceSection('setup')}>{text.backToSetup}</button></div>
-      <div className="footnote">
-        {text.footnote}
-        <br />
-        {text.moonSource}{' '}
-        <a href="https://svs.gsfc.nasa.gov/4720">NASA SVS CGI Moon Kit</a> (LROC color map, LOLA elevation).
-        {text.southPoleSource}{' '}
-        <a href="https://commons.wikimedia.org/wiki/File:LRO_WAC_South_Pole_Mosaic.jpg">
-          LRO WAC South Pole Mosaic
-        </a>
-        , NASA/GSFC/Arizona State University. {text.publicDomain}
-      </div>
+      <details className="footnote">
+        <summary>{text.dataDetails}</summary>
+        <p>{text.footnote}</p>
+        <p>{text.moonSource}{' '}
+          <a href="https://svs.gsfc.nasa.gov/4720">NASA SVS CGI Moon Kit</a> (LROC color map, LOLA elevation).{' '}
+          {text.southPoleSource}{' '}
+          <a href="https://commons.wikimedia.org/wiki/File:LRO_WAC_South_Pole_Mosaic.jpg">LRO WAC South Pole Mosaic</a>
+          , NASA/GSFC/Arizona State University. {text.publicDomain}
+        </p>
+      </details>
       </>}
         </main>
       )}

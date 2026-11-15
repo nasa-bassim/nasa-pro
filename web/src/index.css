@@ -310,6 +310,16 @@ h1 {
   color: var(--text);
 }
 
+.marker-group {
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+
+.marker-group .marker {
+  position: relative;
+  transform: none;
+}
+
 .marker {
   position: absolute;
   width: 14px;
@@ -328,7 +338,7 @@ button.marker:hover:not(:disabled) {
 }
 
 button.marker:active:not(:disabled) {
-  transform: translate(-50%, -50%) scale(0.9);
+  transform: scale(0.9);
 }
 
 button.marker:disabled {
@@ -407,14 +417,27 @@ button.marker.cluster:hover:not(:disabled) {
 .chip {
   display: inline-grid;
   place-items: center;
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid transparent;
   border-radius: 50%;
   background: #ffffff;
   color: #000000;
+  cursor: pointer;
   font-size: 11px;
   line-height: 1;
   font-weight: 700;
+  pointer-events: auto;
+}
+.chip:hover, .chip:focus-visible { background: #f2b01e; outline: none; }
+.chip.is-selected { border-color: #f2b01e; box-shadow: 0 0 0 2px rgba(242,176,30,.42); }
+/* The evidence branch reaches the actual cluster / candidate control, not empty space. */
+.mission-canvas.has-exploration .lunar-pulse-stage::before {
+  pointer-events: none;
+}
+.mission-canvas.has-exploration .lunar-pulse-stage::after {
+  pointer-events: none;
 }
 
 /* ---- 열 ---- */
@@ -2176,7 +2199,147 @@ html[lang='ko'] .hero-text .product h1 {
   }
 }
 
-/* The branch begins at the Moon's visible rim; preserve the selected globe inside the viewport. */
+/* Restore the operational controls without returning to the former explanatory hero. */
+.workspace-page:has(.mission-canvas) .workspace-flow {
+  display: flex;
+  width: min(100% - 48px, 1240px);
+  margin: 0 auto;
+  padding: 8px 0 0;
+}
+.workspace-page > .mission-canvas {
+  height: calc(100dvh - 104px);
+  grid-template-rows: auto minmax(0, 1fr);
+  padding: 8px 24px 18px;
+}
+.mission-canvas .hero-text {
+  display: block;
+  width: min(100%, 1180px);
+  min-height: 0;
+  margin: 0 auto;
+}
+.mission-canvas .product,
+.mission-canvas .intro,
+.mission-canvas .comparison-status,
+.mission-canvas .data-note,
+.mission-canvas .scenario-bar { display: none; }
+.mission-control-deck {
+  display: grid;
+  grid-template-columns: auto minmax(220px, 1fr) minmax(190px, auto) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 11px 9px 14px;
+  border: 1px solid rgba(245,245,247,.13);
+  border-radius: 14px;
+  background: rgba(18,18,20,.76);
+  box-shadow: 0 12px 34px rgba(0,0,0,.2);
+  backdrop-filter: blur(12px);
+}
+.mission-control-summary {
+  display: grid;
+  gap: 2px;
+  min-width: 88px;
+}
+.mission-control-summary span { color: #f5f5f7; font-size: 13px; font-weight: 600; }
+.mission-control-summary strong { color: #a1a1a6; font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+.mission-scenario-tabs {
+  display: flex;
+  gap: 5px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.mission-scenario-tabs::-webkit-scrollbar { display: none; }
+.mission-scenario-tabs button {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: 5px;
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid #3a3a3c;
+  border-radius: 10px;
+  background: #19191b;
+  color: #a1a1a6;
+}
+.mission-scenario-tabs button:hover { border-color: #636366; background: #242426; }
+.mission-scenario-tabs button.is-selected { border-color: #2997ff; background: rgba(41,151,255,.12); color: #f5f5f7; }
+.mission-scenario-tabs b { color: #f5f5f7; font-size: 12px; }
+.mission-scenario-tabs span { font-size: 11px; white-space: nowrap; }
+.mission-control-date { display: grid; gap: 3px; min-width: 0; }
+.mission-control-date > span { color: #a1a1a6; font-size: 10px; font-weight: 600; }
+.mission-control-date input {
+  min-height: 36px;
+  padding: 0 9px;
+  border-color: #3a3a3c;
+  background: #19191b;
+  color: #f5f5f7;
+  font-size: 12px;
+}
+.mission-control-period {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+}
+.mission-control-period > span { color: #a1a1a6; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.mission-control-deck .d-preset {
+  height: 44px;
+  padding: 2px;
+}
+.mission-control-deck .d-preset button {
+  height: 40px;
+  min-height: 40px;
+  padding-inline: 14px;
+  transition: none !important;
+}
+.mission-control-deck .view-results {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  min-height: 44px;
+  padding-inline: 15px;
+  white-space: nowrap;
+}
+.mission-control-deck .view-results:disabled { cursor: wait; opacity: .52; }
+.mission-control-secondary {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 7px;
+  border-top: 1px solid rgba(245,245,247,.08);
+}
+.mission-control-hint { margin: 0; color: #a1a1a6; font-size: 12px; line-height: 1.35; }
+.mission-site-editor { position: relative; flex: none; }
+.mission-site-editor summary { color: #8bc5ff; cursor: pointer; font-size: 12px; font-weight: 600; list-style: none; }
+.mission-site-editor summary::-webkit-details-marker { display: none; }
+.mission-site-editor summary::after { margin-left: 5px; content: '＋'; }
+.mission-site-editor[open] summary::after { content: '−'; }
+.mission-site-editor-panel {
+  position: absolute;
+  z-index: 8;
+  top: calc(100% + 10px);
+  right: 0;
+  display: flex;
+  gap: 7px;
+  width: min(440px, calc(100vw - 48px));
+  padding: 10px;
+  border: 1px solid #424245;
+  border-radius: 12px;
+  background: #1c1c1e;
+  box-shadow: 0 18px 48px rgba(0,0,0,.45);
+}
+.mission-site-editor-panel select { min-width: 0; flex: 1; }
+.mission-site-editor-panel button { min-height: 40px; padding-inline: 12px; }
+.mission-canvas .mission-globe {
+  align-items: start;
+  width: min(100%, 1040px);
+  padding-top: 12px;
+}
+.mission-canvas .mission-globe .moon { width: min(100%, min(76vh, 790px)); margin-top: 0; }
 .mission-canvas.has-exploration .mission-globe .moon {
   transform: translateX(clamp(-132px, -9vw, -64px));
 }
@@ -2184,16 +2347,84 @@ html[lang='ko'] .hero-text .product h1 {
   left: clamp(-156px, -11vw, -88px);
   width: clamp(82px, 11vw, 156px);
 }
-.mission-canvas.has-exploration .lunar-pulse-stage::after {
-  left: clamp(-162px, -11.4vw, -94px);
-}
+.mission-canvas.has-exploration .lunar-pulse-stage::after { left: clamp(-162px, -11.4vw, -94px); }
 @media (max-width: 960px) {
-  .mission-canvas.has-exploration .mission-globe .moon {
-    transform: translateX(clamp(-94px, -10vw, -48px));
-  }
-  .mission-canvas.has-exploration .lunar-pulse-stage::before {
-    left: clamp(-118px, -13vw, -72px);
-    width: clamp(66px, 13vw, 118px);
-  }
+  .workspace-page:has(.mission-canvas) .workspace-flow { width: min(100% - 32px, 920px); }
+  .mission-control-deck { grid-template-columns: auto minmax(190px, 1fr) auto auto; }
+  .mission-control-date { grid-column: 1 / 3; grid-row: 2; }
+  .mission-control-period { grid-column: 3; grid-row: 2; }
+  .mission-control-deck .view-results { grid-column: 4; grid-row: 2; }
+  .mission-control-secondary { grid-row: 3; }
+  .mission-control-hint { display: none; }
+  .mission-control-secondary { justify-content: flex-end; }
+  .mission-canvas .mission-globe { padding-top: 10px; overflow: clip; }
+  .mission-canvas .mission-globe .moon { width: min(100%, min(62vh, 600px)); }
+  .mission-canvas.has-exploration .mission-globe .moon { transform: translateX(clamp(-94px, -10vw, -48px)); }
+  .mission-canvas.has-exploration .lunar-pulse-stage::before { left: clamp(-118px, -13vw, -72px); width: clamp(66px, 13vw, 118px); }
   .mission-canvas.has-exploration .lunar-pulse-stage::after { left: clamp(-124px, -13.5vw, -78px); }
 }
+@media (max-width: 760px) {
+  .workspace-page:has(.mission-canvas) .workspace-flow {
+    display: flex;
+    width: calc(100% - 32px);
+    padding-top: 5px;
+  }
+  .workspace-page > .mission-canvas {
+    height: calc(100dvh - 92px);
+    padding: 6px 16px 10px;
+  }
+  .mission-canvas .hero-text { width: 100%; }
+  .mission-control-deck {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 8px 9px 8px 11px;
+  }
+  .mission-control-summary { display: none; }
+  .mission-scenario-tabs { grid-column: 1 / -1; }
+  .mission-control-date { grid-column: 1; grid-row: auto; }
+  .mission-control-period { justify-content: flex-start; gap: 7px; }
+  .mission-control-period > span:not(.d-preset) { display: none; }
+  .mission-control-deck .d-preset { display: inline-flex; }
+  .mission-control-deck .d-preset button { min-width: 44px; height: 40px; min-height: 40px; padding-inline: 8px; }
+  .mission-control-deck .view-results { grid-column: 1 / -1; grid-row: auto; justify-content: center; height: 44px; min-height: 44px; padding-inline: 11px; font-size: 13px; }
+  .mission-control-secondary { grid-column: 1 / -1; grid-row: auto; }
+  .mission-control-hint { font-size: 11px; }
+  .mission-canvas .mission-globe .moon { width: min(100%, min(54vh, 430px)); }
+  .mission-canvas.has-exploration .mission-globe .moon { width: min(100%, min(39vh, 320px)); transform: none; }
+}
+@media (max-width: 420px) {
+  .mission-control-deck { grid-template-columns: minmax(0, 1fr); }
+  .mission-control-date, .mission-control-period, .mission-control-deck .view-results, .mission-control-secondary { grid-column: 1; }
+  .mission-control-date input { width: 100%; }
+  .mission-control-period { min-width: 0; }
+  .mission-control-deck .d-preset { gap: 3px; }
+  .mission-control-deck .d-preset button { min-width: 44px; padding-inline: 7px; }
+  .mission-control-secondary { align-items: flex-start; }
+  .mission-control-hint { max-width: 230px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mission-control-deck { backdrop-filter: none; }
+}
+
+/* Map labels distinguish reference sites from selectable analysis scenarios. */
+.selection-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  margin-left: 6px;
+  padding: 0 7px;
+  border: 1px solid #636366;
+  border-radius: 999px;
+  color: #d1d1d6;
+  font-size: 11px;
+  font-weight: 700;
+}
+.selection-badge.is-selected { border-color: #2997ff; color: #8bc5ff; background: rgba(41,151,255,.12); }
+.marker.reference { border-color: #636366; background: #242426; opacity: .68; }
+.marker.reference + .marker-label { color: #8e8e93; font-size: 11px; }
+
+/* Results reveal the decision first; supporting evidence follows underneath. */
+.comparison-table { margin-top: 18px; }
+.selected-scenario { margin-top: 24px; }
+.footnote summary { color: #a1a1a6; cursor: pointer; font-size: 13px; font-weight: 600; }
+.footnote p { margin: 12px 0 0; max-width: 980px; color: #86868b; font-size: 13px; line-height: 1.65; }

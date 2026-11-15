@@ -145,16 +145,12 @@ interface Mark {
 
 const pct = (v: number) => `${50 + 50 * v}%`;
 
-function Chips({ cols }: { cols: number[] }) {
-  return (
-    <>
-      {cols.map((n) => (
-        <span className="chip" key={n}>
-          {n}
-        </span>
-      ))}
-    </>
-  );
+function SelectionBadge({ cols, selectedColumnNo }: { cols: number[]; selectedColumnNo?: number }) {
+  if (cols.length === 0) return null;
+  return <span
+    className={`selection-badge${selectedColumnNo !== undefined && cols.includes(selectedColumnNo) ? ' is-selected' : ''}`}
+    aria-label={`${cols.length}개 시나리오에서 선택됨`}
+  >✓{cols.length > 1 ? ` ${cols.length}` : ''}</span>;
 }
 
 const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
@@ -165,12 +161,19 @@ const reducedMotion = () =>
 export const Moon3D = memo(function Moon3D({
   columns,
   selectedSite,
+  selectedColumnNo,
   onSelect,
+  onSelectColumn,
+  onReady,
   language,
 }: {
   columns: MapColumn[];
   selectedSite?: string;
+  selectedColumnNo?: number;
   onSelect: (slug: string) => void;
+  onSelectColumn?: (no: number) => void;
+  // Lets the parent wait for the first rendered Moon frame before opening dependent UI.
+  onReady?: () => void;
   language: Language;
 }) {
   const t = copy[language];
@@ -180,8 +183,9 @@ export const Moon3D = memo(function Moon3D({
   const [failed, setFailed] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [size, setSize] = useState(0);
-  const [, setTextures] = useState(0);
+  const [textures, setTextures] = useState(0);
   const [view, setView] = useState<View>(WHOLE);
+  const didReportReady = useRef(false);
 
   // 애니메이션과 끌기 핸들러가 최신 값을 읽을 수 있게 거울을 둔다.
   const viewRef = useRef(view);
@@ -261,6 +265,13 @@ export const Moon3D = memo(function Moon3D({
     if (!r || !canvas || size <= 0) return;
     r.draw(view.q, view.zoom, size);
   });
+
+  useEffect(() => {
+    // The textures and measured canvas are ready, so the first Moon frame is on screen.
+    if (didReportReady.current || size <= 0 || (!failed && textures < 2)) return;
+    didReportReady.current = true;
+    onReady?.();
+  }, [failed, onReady, size, textures]);
 
   const marks = useMemo(() => {
     const out: Mark[] = SITES.map((s) => ({
@@ -392,55 +403,55 @@ export const Moon3D = memo(function Moon3D({
           );
           const names = g.members.map((x) => x.label).join(', ');
           return (
-            <button
-              key={`group:${first.key}`}
-              type="button"
-              className="marker cluster side-right"
-              style={style}
-              onClick={() =>
-                animateTo({ q: centerOn(view.q, center), zoom: Math.min(MAX_ZOOM, view.zoom * 2.6) }, 800)
-              }
-              aria-label={`${names} ${t.zoomTo}`}
-              title={`${names} ${t.zoomTo}`}
-            >
-              {g.members.length}
+            <span key={`group:${first.key}`} className="marker-group side-right" style={style}>
+              <button
+                type="button"
+                className="marker cluster"
+                onClick={() =>
+                  animateTo({ q: centerOn(view.q, center), zoom: Math.min(MAX_ZOOM, view.zoom * 2.6) }, 800)
+                }
+                aria-label={`${names} ${t.zoomTo}`}
+                title={`${names} ${t.zoomTo}`}
+              >
+                {g.members.length}
+              </button>
               <span className="marker-label">
                 {g.members.length} {t.sites} · {t.tapToZoom}
-                <Chips cols={cols} />
+                <SelectionBadge cols={cols} selectedColumnNo={selectedColumnNo} />
               </span>
-            </button>
+            </span>
           );
         }
         const cls = `marker side-${first.side}${first.cols.length > 0 ? ' used' : ''}${selectedSite === first.slug ? ' is-selected' : ''}`;
         const label = (
           <span className="marker-label">
             {first.label}
-            <Chips cols={first.cols} />
+            <SelectionBadge cols={first.cols} selectedColumnNo={selectedColumnNo} />
           </span>
         );
         if (first.slug === null)
           return (
-            <span key={first.key} className={cls} style={style} title={first.title}>
+            <span key={first.key} className={`${cls} reference`} style={style} title={first.title}>
               {label}
             </span>
           );
         const slug = first.slug;
         return (
-          <button
-            key={first.key}
-            type="button"
-            className={cls}
-            style={style}
-            aria-pressed={selectedSite === slug}
-            onClick={() => {
-              onSelect(slug);
-              animateTo({ q: centerOn(view.q, first.world), zoom: Math.max(2.6, Math.min(MAX_ZOOM, view.zoom * 1.7)) }, 700);
-            }}
-            aria-label={`${first.title} ${t.selectSite}`}
-            title={`${first.title} ${t.selectSite}`}
-          >
+          <span key={first.key} className={`marker-group side-${first.side}`} style={style}>
+            <button
+              type="button"
+              className={cls}
+              aria-pressed={selectedSite === slug}
+              onClick={() => {
+                onSelect(slug);
+                if (first.cols[0] !== undefined) onSelectColumn?.(first.cols[0]);
+                animateTo({ q: centerOn(view.q, first.world), zoom: Math.max(2.6, Math.min(MAX_ZOOM, view.zoom * 1.7)) }, 700);
+              }}
+              aria-label={`${first.title} ${t.selectSite}`}
+              title={`${first.title} ${t.selectSite}`}
+            />
             {label}
-          </button>
+          </span>
         );
       })}
 
