@@ -1,57 +1,144 @@
-# justn-prototype-1
+# Lunar Navigator
 
-달 착륙지 비교 도구의 연습용 프로토타입입니다. 대회 제출물이 아니며, 이 저장소의 코드와 데이터는 제출물로 옮기지 않습니다.
+**An explainable lunar landing-site comparison tool powered by NASA ephemeris and terrain data.**
 
-- `pipeline/`: Python. Horizons 호출과 지형 계산. 8개 큐레이션 지점의 사전 계산
-- `backend/`: Java + Spring Boot (Gradle wrapper 포함). 브라우저가 직접 부를 수 없는
-  Horizons를 프록시·캐시해서 직접 입력 좌표의 ephemeris를 돌려준다 (`GET /api/ephemeris`)
-- `web/`: Vite + React + TypeScript. 생성된 JSON을 읽는 정적 화면
-- `schema/`: 두 쪽이 공유하는 JSON 스키마
-- `docs/`: 자료 출처와 AI 사용 기록
+Lunar Navigator helps users compare candidate lunar landing sites by answering a practical early-stage mission question:
 
-## 처음 설정
+> Where can a surface mission maintain useful sunlight and direct Earth visibility, and does that advantage remain when terrain, timing, and landing-position uncertainty are considered?
 
-```bash
-git config core.hooksPath .githooks
-```
+The project was created by **Nasa-bbajim** for the **2026 NASA International Space Apps Challenge**. It is an educational and preliminary planning tool, not a flight-certified landing-safety system.
 
-push 전에 `scripts/check.sh`가 돕니다. CI도 같은 스크립트를 실행합니다.
+- [NASA Space Apps team page](https://www.spaceappschallenge.org/2026/find-a-team/nasa-bbajim/?tab=project)
+- [Source repository](https://github.com/nasa-bassim/nasa-pro)
 
-CI 테스트는 Horizons를 호출하지 않고 `pipeline/tests/fixtures/`의 저장된 응답만 씁니다.
+## The problem
 
-## 실행
+A visually promising point on the Moon is not automatically a useful surface-operations site. A mission may need sunlight for power and a direct line of sight to Earth for communication at the same time. Local terrain can also block either body even when a smooth-sphere calculation says it is above the horizon.
 
-백엔드 (JDK 26 필요, Gradle은 커밋된 wrapper 사용):
+Existing lunar maps are excellent for exploring imagery and topography, but comparing these operational trade-offs often requires moving between datasets and interpreting raw ephemeris tables. Lunar Navigator brings those conditions into one comparison workflow and keeps the reasoning behind each result visible.
 
-```bash
-cd backend
-./gradlew bootRun        # http://localhost:8080
-```
+## What makes it different
 
-프런트엔드:
+- **Power and communication together:** compares sunlight, Earth contact, and the time when both conditions overlap.
+- **Terrain-aware visibility:** applies azimuth-dependent terrain horizons derived from NASA LRO LOLA elevation data to six south-polar candidates.
+- **Robustness, not only a best-case point:** checks whether a result survives changes in landing position and mission timing.
+- **Explainable recommendations:** shows simultaneous visibility, sunlight share, longest continuous darkness, data coverage, and limitations instead of presenting an unexplained score.
+- **Interactive exploration:** connects a rotatable 3D Moon and curated candidate sites to the detailed comparison workspace.
+- **Reproducible data path:** records the source, processing method, cache behavior, and AI-assisted work used to build the project.
+
+## What users can do
+
+1. Explore curated lunar sites on an interactive 3D Moon.
+2. Select one or more candidates and a 7-, 14-, or 28-day observation window.
+3. Compare sunlight, Earth visibility, simultaneous visibility, and continuous darkness.
+4. Turn LOLA-based terrain occlusion on or off where coverage is available.
+5. Inspect how nearby landing positions and schedule changes affect the result.
+6. Enter custom lunar coordinates when the backend Horizons proxy is running.
+
+The word **recommended** in the interface means *most favorable under the selected sunlight-and-Earth-visibility criteria*. It does not mean that a site is safe or approved for landing.
+
+## NASA data and scientific sources
+
+| Source | How it is used |
+| --- | --- |
+| [NASA/JPL Horizons API](https://ssd-api.jpl.nasa.gov/doc/horizons.html) | Hourly Sun and Earth azimuth/elevation as observed from lunar coordinates |
+| [NASA LRO LOLA GDR](https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/lola_gdr/polar/img/) | 240 m/pixel south-polar elevation raster used to calculate terrain-horizon masks |
+| [NASA SVS CGI Moon Kit](https://svs.gsfc.nasa.gov/4720) | LROC color and LOLA elevation products used for the 3D Moon surface and relief shading |
+| [LRO WAC South Pole Mosaic](https://commons.wikimedia.org/wiki/File:LRO_WAC_South_Pole_Mosaic.jpg) | South-polar visual context |
+| LROC, DLR, De Rosa et al., IAU Gazetteer, and NSSDC | References for the curated candidate-site coordinates |
+
+The precomputed dataset covers **2026-11-01 through 2027-05-01** at **one-hour intervals**. Every generated ephemeris JSON file retains a NASA/JPL source signature. Full provenance, asset credits, and processing notes are documented in [`docs/sources.md`](docs/sources.md).
+
+## Method
+
+For each selected site and time window, Lunar Navigator:
+
+1. loads Sun and Earth observer ephemerides from precomputed Horizons responses or the backend proxy;
+2. compares each body's elevation with either the geometric horizon or the LOLA-derived terrain horizon for its azimuth;
+3. marks samples with sunlight, Earth contact, and simultaneous visibility;
+4. calculates total overlap, sunlight share, and longest continuous darkness;
+5. evaluates nearby positions and shifted start times under the same mission assumptions; and
+6. exposes the individual metrics and caveats used by the comparison.
+
+Terrain horizons are generated for each azimuth degree from a 240 m/pixel LOLA south-polar raster, using a nominal observer height of 2 m and searching terrain out to 250 km.
+
+## Scientific scope and limitations
+
+Lunar Navigator is designed for transparent comparison and education. Its results should be treated as preliminary visibility estimates.
+
+- The current recommendation considers **sunlight, direct Earth visibility, terrain occlusion where available, and limited position/time robustness**.
+- It does **not** assess local slope, boulders, craters, regolith properties, thermal limits, radiation, dust, descent trajectories, link budgets, scientific value, or resource accessibility.
+- The one-hour sampling interval can shift a reported visibility boundary by up to roughly one sampling interval and can miss shorter events.
+- LOLA terrain occlusion currently applies to six south-polar candidates. Sites outside the raster coverage use a smooth-sphere horizon and are labeled accordingly; those results are not equivalent to terrain-adjusted results.
+- The terrain calculation depends on the selected raster resolution, nominal observer height, and 250 km search radius.
+- Custom-coordinate analysis depends on the backend service and the availability of NASA/JPL Horizons.
+
+These limits are shown because the project is intended to support reasoning, not replace complete mission design or landing-hazard analysis.
+
+## Architecture
+
+| Directory | Role |
+| --- | --- |
+| `pipeline/` | Python pipeline for Horizons acquisition, parsing, cached preprocessing, and LOLA terrain-horizon generation |
+| `backend/` | Java/Spring Boot proxy and cache for custom-coordinate Horizons requests |
+| `web/` | React, TypeScript, Vite, and Three.js application |
+| `schema/` | Shared JSON schema for generated ephemeris data |
+| `docs/` | Data provenance, asset attribution, and AI-use records |
+| `scripts/` | Repository-wide validation commands |
+
+Curated sites use static JSON in `web/public/data/` and can be explored without the backend. Only custom-coordinate analysis requires the Spring Boot proxy.
+
+## Run locally
+
+### Prerequisites
+
+- Node.js and pnpm 10
+- JDK 26 for the backend
+- [`uv`](https://docs.astral.sh/uv/) for the Python pipeline and its tests
+
+### Frontend
 
 ```bash
 cd web
 pnpm install
-pnpm dev               # /api 요청은 localhost:8080으로 프록시된다
+pnpm dev
 ```
 
-큐레이션 지점 8곳은 `web/public/data/`의 정적 JSON만 쓰므로 백엔드 없이도 동작합니다.
-"직접 좌표 입력" 열만 백엔드가 필요합니다. 백엔드가 Horizons에 요청을 보낼 때는 호출
-사이에 2초 간격을 두고, 응답은 `backend/cache/`에 캐시됩니다.
+Open [http://127.0.0.1:5174/](http://127.0.0.1:5174/). The curated candidates work without starting the backend.
 
-## 직접 좌표 API의 과부하 처리
+### Backend for custom coordinates
 
-백엔드는 캐시에 없는 서로 다른 요청을 순차 처리합니다. 대기 큐는 기본 16개이며,
-큐 대기·호출 간격·Horizons 응답을 합친 기한은 기본 120초입니다.
-`backend/src/main/resources/application.properties`의 `ephemeris.queue-capacity`와
-`ephemeris.request-timeout`으로 조정할 수 있습니다. 이 값은 초기 운영 기본값이며,
-실제 응답 시간과 트래픽에 맞춰 조정해야 합니다.
+```bash
+cd backend
+./gradlew bootRun
+```
 
-- 큐 초과: HTTP 503, `Retry-After: 2` (초 단위 재시도 힌트)
-- 전체 기한 초과: HTTP 504
-- 그 외 Horizons 오류: HTTP 502
+The frontend development server proxies `/api` requests to `http://localhost:8080`.
 
-오류 본문은 기존과 같은 `{ "error": "..." }` 형식입니다. 자동 재시도는 하지 않습니다.
-대기 중 만료된 작업은 upstream을 호출하지 않으며, 동일 좌표·천체의 요청은 하나의 작업을
-공유합니다. 캐시 적중은 큐를 거치지 않습니다.
+### Full validation
+
+```bash
+./scripts/check.sh
+```
+
+The validation script checks oversized tracked files, Python formatting/types/tests, Spring Boot tests, frontend linting, Vitest tests, and the production build. CI uses saved Horizons fixtures and does not call the live NASA service.
+
+## Backend request handling
+
+Uncached custom-coordinate requests are processed sequentially with a two-second interval between upstream Horizons calls. Responses are cached on disk, and identical concurrent requests share one upstream task.
+
+- Queue full: HTTP `503` with `Retry-After: 2`
+- Request deadline exceeded: HTTP `504`
+- Other Horizons failures: HTTP `502`
+
+The default queue capacity is 16 and the combined request deadline is 120 seconds. These are prototype operating defaults and must be tuned for production traffic.
+
+## AI use disclosure
+
+Claude Code, Devin, ChatGPT/Codex, and Aside were used during development for repository scaffolding, implementation assistance, debugging, UI refinement, documentation, and review. Team members reviewed the resulting changes and used automated tests and source records to validate the implementation.
+
+AI was not used to invent or replace NASA scientific datasets. The application calculations operate on cited NASA/JPL Horizons and LRO-derived data. Earlier chronological development records are maintained in [`docs/sources.md`](docs/sources.md#ai-%EC%82%AC%EC%9A%A9-%EA%B8%B0%EB%A1%9D).
+
+## Project status
+
+This repository contains a working hackathon prototype. Planned extensions include broader high-resolution terrain coverage, finer temporal sampling, and independent comparison against published lunar-illumination references.
