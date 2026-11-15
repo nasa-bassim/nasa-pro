@@ -2334,8 +2334,12 @@ html[lang='ko'] .hero-text .product h1 {
 }
 .mission-site-editor-panel select { min-width: 0; flex: 1; }
 .mission-site-editor-panel button { min-height: 40px; padding-inline: 12px; }
-.mission-canvas .mission-globe { width: min(100%, 1040px); }
-.mission-canvas .mission-globe .moon { width: min(100%, min(80vh, 790px)); }
+.mission-canvas .mission-globe {
+  align-items: start;
+  width: min(100%, 1040px);
+  padding-top: 12px;
+}
+.mission-canvas .mission-globe .moon { width: min(100%, min(76vh, 790px)); margin-top: 0; }
 .mission-canvas.has-exploration .mission-globe .moon {
   transform: translateX(clamp(-132px, -9vw, -64px));
 }
@@ -2351,6 +2355,10 @@ html[lang='ko'] .hero-text .product h1 {
   .mission-control-period { grid-column: 3; grid-row: 2; }
   .mission-control-deck .view-results { grid-column: 4; grid-row: 2; }
   .mission-control-secondary { grid-row: 3; }
+  .mission-control-hint { display: none; }
+  .mission-control-secondary { justify-content: flex-end; }
+  .mission-canvas .mission-globe { padding-top: 10px; overflow: clip; }
+  .mission-canvas .mission-globe .moon { width: min(100%, min(62vh, 600px)); }
   .mission-canvas.has-exploration .mission-globe .moon { transform: translateX(clamp(-94px, -10vw, -48px)); }
   .mission-canvas.has-exploration .lunar-pulse-stage::before { left: clamp(-118px, -13vw, -72px); width: clamp(66px, 13vw, 118px); }
   .mission-canvas.has-exploration .lunar-pulse-stage::after { left: clamp(-124px, -13.5vw, -78px); }
