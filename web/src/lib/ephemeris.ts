@@ -12,8 +12,9 @@ export interface Ephemeris {
   lat: number;
   lon_e: number;
   source?: string;
+  refined?: boolean;
   samples: Sample[];
-  // 지형 지평선 고도각(도). 방위각 0°~359°(북 0, 동 90)의 360개 값. 없으면 매끈한 구.
+  // 지형 지평선 고도각(도). 북 0°, 동 90°. 원형 균등 격자(360 또는 3600개). 없으면 매끈한 구.
   horizon?: number[];
 }
 

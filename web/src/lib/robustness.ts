@@ -18,7 +18,7 @@ export interface Verdict {
 }
 
 export function judge(sun: Ephemeris, earth: Ephemeris, t0: number, days: number): Verdict {
-  const overlapPercent = Math.round((timeline(sun, earth, t0, days).bothVisibleMs / (days * DAY_MS)) * 100);
+  const overlapPercent = (timeline(sun, earth, t0, days).bothVisibleMs / (days * DAY_MS)) * 100;
   const darkHours = stats(sun, t0, days).longestDarkHours;
   const reasons: FailReason[] = [];
   if (darkHours > MISSION.maxDarkHours) reasons.push('dark');
