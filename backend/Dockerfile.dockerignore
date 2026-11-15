@@ -1,0 +1,13 @@
+**
+!backend/
+!backend/gradlew
+!backend/gradle/
+!backend/gradle/**
+!backend/settings.gradle
+!backend/build.gradle
+!backend/src/
+!backend/src/**
+!pipeline/
+!pipeline/tests/
+!pipeline/tests/fixtures/
+!pipeline/tests/fixtures/**

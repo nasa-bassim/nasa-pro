@@ -1,4 +1,5 @@
 import { fetchRefinement } from './lib/refinement';
+import { apiUrl } from './lib/api';
 import { comparisonSummary } from './lib/comparison';
 import type { ComparisonColumn } from './lib/comparison';
 import { lazy, memo, startTransition, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -120,7 +121,7 @@ async function fetchSiteData(key: string): Promise<SiteData> {
     ? (() => {
         const [, lat, lon] = key.split(':');
         const q = `lat=${lat}&lon_e=${lon}`;
-        return [`/api/ephemeris?${q}&body=sun`, `/api/ephemeris?${q}&body=earth`];
+        return [apiUrl(`/api/ephemeris?${q}&body=sun`), apiUrl(`/api/ephemeris?${q}&body=earth`)];
       })()
     : [`/data/${key}_sun.json`, `/data/${key}_earth.json`];
   const [sun, earth] = await Promise.all(

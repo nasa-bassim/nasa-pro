@@ -2,6 +2,7 @@
 import { useMemo, useState } from 'react';
 
 import './decision.css';
+import { apiUrl } from './lib/api';
 import { duration } from './i18n';
 import type { Language } from './i18n';
 import { bestStart } from './lib/bestStart';
@@ -131,7 +132,7 @@ function fetchPoint(lat: number, lonE: number): Promise<PointData> {
   const cached = pointCache.get(q);
   if (cached) return cached;
   const get = (body: 'earth' | 'sun') =>
-    fetch(`/api/ephemeris?${q}&body=${body}`).then((r) => {
+    fetch(apiUrl(`/api/ephemeris?${q}&body=${body}`)).then((r) => {
       if (!r.ok) throw new Error(String(r.status));
       return r.json() as Promise<Ephemeris>;
     });
