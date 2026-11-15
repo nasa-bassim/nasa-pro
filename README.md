@@ -2,6 +2,16 @@
 
 **An explainable lunar landing-site comparison tool powered by NASA ephemeris and terrain data.**
 
+## 🌐 Language Guide for International Visitors
+
+**Please note:** Lunar Navigator currently opens in Korean by default.
+
+To use the application in English, simply click the **"English" button in the top-right corner** of the website.
+
+The application supports both Korean and English. We recommend switching to English for the best experience during international judging.
+
+Thank you for exploring our project!
+
 Lunar Navigator helps users compare candidate lunar landing sites by answering a practical early-stage mission question:
 
 > Where can a surface mission maintain useful sunlight and direct Earth visibility, and does that advantage remain when terrain, timing, and landing-position uncertainty are considered?
