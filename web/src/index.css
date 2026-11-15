@@ -2283,7 +2283,25 @@ html[lang='ko'] .hero-text .product h1 {
   min-width: 0;
 }
 .mission-control-period > span { color: #a1a1a6; font-size: 11px; font-weight: 600; white-space: nowrap; }
-.mission-control-deck .view-results { display: inline-flex; min-height: 40px; padding-inline: 15px; white-space: nowrap; }
+.mission-control-deck .d-preset {
+  height: 44px;
+  padding: 2px;
+}
+.mission-control-deck .d-preset button {
+  height: 40px;
+  min-height: 40px;
+  padding-inline: 14px;
+  transition: none !important;
+}
+.mission-control-deck .view-results {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  min-height: 44px;
+  padding-inline: 15px;
+  white-space: nowrap;
+}
 .mission-control-deck .view-results:disabled { cursor: wait; opacity: .52; }
 .mission-control-secondary {
   grid-column: 1 / -1;
@@ -2359,8 +2377,8 @@ html[lang='ko'] .hero-text .product h1 {
   .mission-control-period { justify-content: flex-start; gap: 7px; }
   .mission-control-period > span:not(.d-preset) { display: none; }
   .mission-control-deck .d-preset { display: inline-flex; }
-  .mission-control-deck .d-preset button { min-width: 40px; height: 30px; padding-inline: 8px; }
-  .mission-control-deck .view-results { grid-column: 1 / -1; grid-row: auto; justify-content: center; min-height: 40px; padding-inline: 11px; font-size: 13px; }
+  .mission-control-deck .d-preset button { min-width: 44px; height: 40px; min-height: 40px; padding-inline: 8px; }
+  .mission-control-deck .view-results { grid-column: 1 / -1; grid-row: auto; justify-content: center; height: 44px; min-height: 44px; padding-inline: 11px; font-size: 13px; }
   .mission-control-secondary { grid-column: 1 / -1; grid-row: auto; }
   .mission-control-hint { font-size: 11px; }
   .mission-canvas .mission-globe .moon { width: min(100%, min(54vh, 430px)); }

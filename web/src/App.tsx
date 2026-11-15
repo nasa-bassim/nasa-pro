@@ -160,16 +160,13 @@ const PeriodPicker = memo(function PeriodPicker({
   label: string;
   onChange: (days: number) => void;
 }) {
-  const [pendingDays, setPendingDays] = useState<number | null>(null);
-  const visualDays = pendingDays ?? days;
+  const [visualDays, setVisualDays] = useState(days);
   const choose = (nextDays: number) => {
     if (nextDays === visualDays) return;
-    // Commit the selected pill urgently, then let the duration-wide analysis yield to it.
-    setPendingDays(nextDays);
-    startTransition(() => {
-      onChange(nextDays);
-      setPendingDays(null);
-    });
+    // Paint the selected pill first. The expensive duration-wide analysis starts
+    // on the next frame, so it cannot delay the button's visual feedback.
+    setVisualDays(nextDays);
+    window.requestAnimationFrame(() => startTransition(() => onChange(nextDays)));
   };
   return (
     <span className="d-preset" role="group" aria-label={label}>
@@ -1056,7 +1053,7 @@ export default function App() {
           <div className="scenario-bar">
             <div className="bar-row">
               <span className="d-label">{text.window}</span>
-              <PeriodPicker days={days} language={language} label={text.durationGroup} onChange={setDays} />
+              <PeriodPicker key={`setup-period-${days}`} days={days} language={language} label={text.durationGroup} onChange={setDays} />
             </div>
             <div className="bar-row">
               <select
@@ -1123,7 +1120,7 @@ export default function App() {
             </label>
             <div className="mission-control-period">
               <span>{text.window}</span>
-              <PeriodPicker days={days} language={language} label={text.durationGroup} onChange={setDays} />
+              <PeriodPicker key={`mission-period-${days}`} days={days} language={language} label={text.durationGroup} onChange={setDays} />
             </div>
             <button
               type="button"
