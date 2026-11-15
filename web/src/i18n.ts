@@ -102,7 +102,7 @@ export const copy = {
     maxSunElevation: '일조 중 최대 태양 고도',
     noSunlight: '일조 없음',
     tableSite: '후보지',
-    tablePowerContact: '빛+통신 가능',
+    tablePowerContact: '빛·통신 동시 가능',
     tableLongestDark: '가장 긴 어둠',
     tableRecommendation: '추천 근거',
     recommendedReason: '동시 가시 최장',

@@ -17,7 +17,7 @@ import type { T0Field } from './lib/t0Field';
 import type { Ephemeris } from './lib/ephemeris';
 import { eventMetric, stats, timeline } from './lib/metrics';
 import { tickStepMs } from './lib/timelineTicks';
-import { SITES } from './sites';
+import { SITES, shortSiteName } from './sites';
 import { copy, duration, eventDuration } from './i18n';
 import type { Language } from './i18n';
 
@@ -183,6 +183,50 @@ const PeriodPicker = memo(function PeriodPicker({
     </span>
   );
 });
+
+// 선택한 시나리오의 착륙 시작 시각. 입력 중인 값은 되돌리지 않고(draft),
+// 범위 안 완전값만 바로 적용한다. 범위 밖은 blur/Enter에서 범위 안으로 맞추고 알린다.
+function ScenarioStartInput({
+  value,
+  days,
+  label,
+  warning,
+  onApply,
+}: {
+  value: string;
+  days: number;
+  label: string;
+  warning: string;
+  onApply: (t0: string) => void;
+}) {
+  const [field, setField] = useState<T0Field>(initialT0Field);
+  const commit = () => {
+    const d = t0Commit(field, value, days);
+    setField(d.field);
+    if (d.apply !== null) onApply(d.apply);
+  };
+  return (
+    <label className="mission-control-date">
+      <span>{label}</span>
+      <input
+        type="datetime-local"
+        min={T0_MIN}
+        max={T0_MAX}
+        value={field.draft ?? value}
+        onChange={(event) => {
+          const d = t0DraftChange(field, event.target.value, days);
+          setField(d.field);
+          if (d.apply !== null) onApply(d.apply);
+        }}
+        onBlur={commit}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') commit();
+        }}
+      />
+      {field.warn ? <small className="warn" role="status">{warning}</small> : null}
+    </label>
+  );
+}
 
 function MetricCard({ title, value, sub }: { title: string; value: string; sub?: string }) {
   return (
@@ -888,6 +932,25 @@ export default function App() {
   const selectedKey = selectedColumn ? columnKey(selectedColumn) : null;
   const ko = language === 'ko';
   const text = copy[language];
+  const changeSelectedSite = (site: string) => {
+    if (!selectedColumn) return;
+    // 지점이 바뀌면 직접 입력 좌표는 버린다. 착륙 시각은 유지해 같은 조건으로 비교한다.
+    setColumns((items) => items.map((item) => item.id === selectedColumn.id ? { id: item.id, site, t0: item.t0 } : item));
+  };
+  // 관찰 기간이 길어져 t0 + D가 계산 범위를 넘으면 모든 시나리오의 t0를 범위 안으로 맞춘다.
+  const changeDays = useCallback((nextDays: number) => {
+    setDays(nextDays);
+    setColumns((items) => {
+      let changed = false;
+      const next = items.map((item) => {
+        const t0 = formatT0Input(clampT0(parseT0Input(item.t0), nextDays));
+        if (t0 === item.t0) return item;
+        changed = true;
+        return { ...item, t0 };
+      });
+      return changed ? next : items;
+    });
+  }, []);
   const explorationInfo = explorationSite ? SITES.find((site) => site.slug === explorationSite) : undefined;
   const explorationRecord = explorationInfo ? data[explorationInfo.slug] : undefined;
   const explorationStart = explorationInfo ? columns.find((column) => column.site === explorationInfo.slug)?.t0 ?? DEFAULT_COLUMNS[0]!.t0 : undefined;
@@ -949,11 +1012,19 @@ export default function App() {
     }, 240);
   };
 
+  const viewRef = useRef(view);
+  useEffect(() => {
+    viewRef.current = view;
+  }, [view]);
+
   useEffect(() => {
     const onPopState = () => {
       const next = window.location.hash === '#workspace' ? 'workspace' : 'landing';
+      // 이미 작업 화면이면 달이 다시 마운트되지 않아 준비 신호도 다시 오지 않는다.
+      // 그때 준비 상태를 끄면 후보지 정보가 영영 열리지 않으므로, 화면이 바뀔 때만 초기화한다.
+      const changed = viewRef.current !== next;
       setView(next);
-      if (next === 'workspace') {
+      if (next === 'workspace' && changed) {
         setWorkspaceSection('setup');
         setMissionMoonReady(false);
       }
@@ -1015,73 +1086,7 @@ export default function App() {
           </div>
       {workspaceSection === 'setup' ? <header className={`hero mission-canvas${evidenceOpen ? ' has-exploration' : ''}`}>
         <div className="hero-text">
-          <div className="product">
-            <div>
-              <h1>{text.heroTitle}</h1>
-            </div>
-          </div>
-          <p className="intro">{text.heroLead}</p>
-          <div className={`comparison-status${comparisonReady ? ' is-ready' : ''}`} role="status" aria-live="polite" aria-atomic="true">
-            <div className="status-heading">
-              <span>{comparisonReady ? text.currentRecommendation : text.calculating}</span>
-              <span className="ready-count">{columns.length}{text.selectedCandidates}</span>
-            </div>
-            {comparisonReady && comparison.ms !== null ? (
-              <div className="recommendation-summary">
-                <div className="recommendation-candidates">
-                  <span>{text.recommendedCandidates}</span>
-                  <div>
-                    {comparison.columns.map((no) => <b key={no}>{ko ? `${no}번` : `#${no}`}</b>)}
-                  </div>
-                </div>
-                <div className="recommendation-time">
-                  <span>{text.simultaneousVisible}</span>
-                  <strong>{duration(comparison.ms, language)}</strong>
-                </div>
-                <div className="recommendation-meta">
-                  <span>{text.observationWindow} <b>{ko ? `${comparison.days}일` : `${comparison.days} days`}</b></span>
-                  <p>{comparison.state === 'tie' ? text.recommendationTie : text.recommendationBasis}</p>
-                </div>
-              </div>
-            ) : (
-              <p className="summary-pending">
-                {comparison.state === 'empty' ? text.comparisonEmpty : comparison.state === 'single' ? text.comparisonSingle : text.comparisonLoading}
-              </p>
-            )}
-          </div>
-
-          <div className="scenario-bar">
-            <div className="bar-row">
-              <span className="d-label">{text.window}</span>
-              <PeriodPicker key={`setup-period-${days}`} days={days} language={language} label={text.durationGroup} onChange={setDays} />
-            </div>
-            <div className="bar-row">
-              <select
-                value={newSite}
-                onChange={(e) => setNewSite(e.target.value)}
-                aria-label={text.siteToAdd}
-              >
-                {SITES.map((s) => (
-                  <option key={s.slug} value={s.slug}>
-                    {s.name}
-                  </option>
-                ))}
-                <option value={CUSTOM}>{text.customCoordinates}</option>
-              </select>
-              <button className="primary" disabled={!canAdd} onClick={() => addColumn(newSite)}>
-                {text.addSite}
-              </button>
-              <button
-                onClick={() => {
-                  setColumns(DEFAULT_COLUMNS);
-                  setDays(DEFAULT_DAYS);
-                }}
-              >
-                {text.reset}
-              </button>
-            </div>
-          </div>
-
+          <h1 className="sr-only">{text.heroTitle}</h1>
           <div className="mission-control-deck" aria-label={text.analysisControls}>
             <div className="mission-control-summary">
               <span>{ko ? `${columns.length}개 시나리오` : `${columns.length} scenarios`}</span>
@@ -1097,30 +1102,36 @@ export default function App() {
                   className={column.id === selectedColumn?.id ? 'is-selected' : ''}
                   onClick={() => setSelectedId(column.id)}
                 >
-                  <b>#{index + 1}</b><span>{shortScenarioDate(column.t0, language)}</span>
+                  <b>#{index + 1}</b>
+                  <span className="scenario-chip-site">{column.site === CUSTOM ? text.customSite : shortSiteName(column.site)}</span>
+                  <span>{shortScenarioDate(column.t0, language)}</span>
                 </button>
               ))}
             </div>
-            <label className="mission-control-date">
-              <span>{text.landingStart}</span>
-              <input
-                type="datetime-local"
-                min={T0_MIN}
-                max={T0_MAX}
-                value={selectedColumn?.t0 ?? ''}
+            <label className="mission-control-site">
+              <span>{ko ? `#${selectedIndex + 1} ${text.site}` : `#${selectedIndex + 1} ${text.site}`}</span>
+              <select
+                value={selectedColumn?.site ?? ''}
                 disabled={!selectedColumn}
-                onChange={(event) => {
-                  if (!selectedColumn) return;
-                  const ms = parseT0Input(event.target.value);
-                  if (Number.isNaN(ms)) return;
-                  const t0 = formatT0Input(clampT0(ms, days));
-                  setColumns((items) => items.map((item) => item.id === selectedColumn.id ? { ...item, t0 } : item));
-                }}
-              />
+                onChange={(event) => changeSelectedSite(event.target.value)}
+              >
+                {SITES.map((site) => <option key={site.slug} value={site.slug}>{site.name}</option>)}
+                {selectedColumn?.site === CUSTOM ? <option value={CUSTOM}>{text.customSite}</option> : null}
+              </select>
             </label>
+            {selectedColumn ? (
+              <ScenarioStartInput
+                key={selectedColumn.id}
+                value={selectedColumn.t0}
+                days={days}
+                label={text.landingStart}
+                warning={text.rangeWarning}
+                onApply={(t0) => setColumns((items) => items.map((item) => item.id === selectedColumn.id ? { ...item, t0 } : item))}
+              />
+            ) : null}
             <div className="mission-control-period">
               <span>{text.window}</span>
-              <PeriodPicker key={`mission-period-${days}`} days={days} language={language} label={text.durationGroup} onChange={setDays} />
+              <PeriodPicker key={`mission-period-${days}`} days={days} language={language} label={text.durationGroup} onChange={changeDays} />
             </div>
             <button
               type="button"
@@ -1140,28 +1151,35 @@ export default function App() {
                     <option value={CUSTOM}>{text.customCoordinates}</option>
                   </select>
                   <button type="button" disabled={!canAdd} onClick={() => addColumn(newSite)}>{text.addSite}</button>
+                  <button type="button" disabled={!selectedColumn || columns.length <= 1} onClick={() => selectedColumn && removeColumn(selectedColumn.id)}>{ko ? `#${selectedIndex + 1} 제거` : `Remove #${selectedIndex + 1}`}</button>
                   <button type="button" onClick={() => { setColumns(DEFAULT_COLUMNS); setDays(DEFAULT_DAYS); setSelectedId(DEFAULT_COLUMNS[0]!.id); }}>{text.reset}</button>
                 </div>
               </details>
             </div>
           </div>
 
-          <button className="view-results primary" onClick={() => setWorkspaceSection('results')}>{text.viewResults}</button>
-
-          <aside className="data-note" aria-label={text.terrainCaveat}>
-            <span>{text.dataSource}</span>
-            <strong>{text.terrainCaveat}</strong>
-          </aside>
         </div>
         <div className="mission-globe" ref={missionMoonRef} aria-label={text.moonTitle}>
           <Suspense fallback={<MoonLoading language={language} />}>
-            <Moon3D columns={columns} selectedSite={explorationSite ?? undefined} selectedColumnNo={selectedIndex + 1} onSelect={selectExplorationSite} onSelectColumn={selectScenarioFromMoon} onReady={handleMissionMoonReady} language={language} />
+            <Moon3D columns={columns} selectedSite={explorationSite ?? undefined} selectedColumnNo={selectedIndex + 1} onSelect={selectExplorationSite} onSelectColumn={selectScenarioFromMoon} onReady={handleMissionMoonReady} introToPole roundWindow language={language} />
           </Suspense>
           <div className={`lunar-pulse-stage${evidenceOpen ? ' is-open' : ''}`} aria-live="polite">
             {evidenceOpen && explorationInfo ? (
               <>
                 <span>{text.siteInsight}</span><strong>{explorationInfo.name}</strong>
                 {explorationTimeline ? <LunarPulse tl={explorationTimeline} language={language} /> : <p>{text.loadingSiteInsight}</p>}
+                <div className="site-insight-actions">
+                  {selectedColumn && selectedColumn.site !== explorationInfo.slug ? (
+                    <button type="button" onClick={() => changeSelectedSite(explorationInfo.slug)}>
+                      {ko ? `#${selectedIndex + 1} 시나리오를 이 지점으로` : `Use for scenario #${selectedIndex + 1}`}
+                    </button>
+                  ) : null}
+                  {canAdd ? (
+                    <button type="button" onClick={() => addColumn(explorationInfo.slug)}>
+                      {ko ? '새 시나리오로 추가' : 'Add as new scenario'}
+                    </button>
+                  ) : null}
+                </div>
               </>
             ) : <p>{text.selectSiteToExplore}</p>}
           </div>
@@ -1197,32 +1215,21 @@ export default function App() {
         </div>
       ) : (
         <section className="decision-board" aria-label={text.results}>
-          <div className="scenario-tabs" role="tablist" aria-label={text.results}>
-            {columns.map((c, i) => {
-              const site = SITES.find((item) => item.slug === c.site);
-              const key = columnKey(c);
-              const record = key ? data[key] : undefined;
-              const ready = record?.status === 'ok' && record.sun && record.earth;
-              const score = ready ? Math.round(timeline(record.sun!, record.earth!, parseT0Input(c.t0), days).bothVisibleMs / (days * DAY_MS) * 100) : null;
-              return <button key={c.id} role="tab" aria-selected={c.id === selectedColumn?.id} className={`scenario-tab${c.id === selectedColumn?.id ? ' is-selected' : ''}`} onClick={() => setSelectedId(c.id)}>
-                <span>{ko ? `${i + 1}번째 후보지` : `${text.scenario} ${i + 1}`}</span>
-                <strong>{c.site === CUSTOM ? text.customSite : site?.name}</strong>
-                <small>{score === null ? text.calculating : (ko ? `빛·통신 동시 가능 ${score}%` : `${score}% power + contact`)}</small>
-              </button>;
-            })}
-          </div>
           <div className="comparison-table" role="region" aria-label={text.compareNumbers}>
-              <div className="table-head"><span>{text.tableSite}</span><span>{text.tablePowerContact}</span><span>{text.tableLongestDark}</span><span>{text.tableRecommendation}</span></div>
+              <div className="table-head"><span>{text.tableSite}</span><span>{text.landingStart}</span><span>{text.tablePowerContact}</span><span>{text.tableLongestDark}</span><span>{text.tableRecommendation}</span></div>
               {columns.map((c, index) => {
                 const site = SITES.find((item) => item.slug === c.site);
                 const key = columnKey(c); const record = key ? data[key] : undefined;
                 const name = site?.name ?? text.customSite;
-                const label = ko ? `${index + 1}번 ${name}` : `#${index + 1} ${name}`;
-                if (!record?.sun || !record?.earth) return <div className="table-row" key={c.id}><strong>{label}</strong><span>{text.calculating}</span><span>–</span><span>–</span></div>;
+                const label = `#${index + 1} ${name}`;
+                const start = shortScenarioDate(c.t0, language);
+                const selected = c.id === selectedColumn?.id;
+                if (!record?.sun || !record?.earth) return <button className={`table-row${selected ? ' is-selected' : ''}`} aria-pressed={selected} key={c.id} onClick={() => setSelectedId(c.id)}><strong>{label}</strong><span>{start}</span><span>{text.calculating}</span><span>–</span><span>–</span></button>;
                 const tl = timeline(record.sun, record.earth, parseT0Input(c.t0), days);
                 const sunStats = stats(record.sun, parseT0Input(c.t0), days);
                 const recommended = comparisonReady && bestNos.has(index + 1);
-                return <button className={`table-row${recommended ? ' is-recommended' : ''}`} key={c.id} onClick={() => setSelectedId(c.id)}><strong>{label}</strong><span>{duration(tl.bothVisibleMs, language)}</span><span>{duration(sunStats.longestDarkHours * HOUR_MS, language)}</span><span className={recommended ? 'table-reason is-best' : 'table-reason'}>{recommended ? text.recommendedReason : text.notRecommendedReason}</span></button>;
+                const percent = Math.round(tl.bothVisibleMs / (days * DAY_MS) * 100);
+                return <button className={`table-row${recommended ? ' is-recommended' : ''}${selected ? ' is-selected' : ''}`} aria-pressed={selected} key={c.id} onClick={() => setSelectedId(c.id)}><strong>{label}</strong><span>{start}</span><span>{duration(tl.bothVisibleMs, language)} <small>{percent}%</small></span><span>{duration(sunStats.longestDarkHours * HOUR_MS, language)}</span><span className={recommended ? 'table-reason is-best' : 'table-reason'}>{recommended ? text.recommendedReason : text.notRecommendedReason}</span></button>;
               })}
           </div>
           {selectedColumn ? (
