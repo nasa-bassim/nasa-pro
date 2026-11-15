@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent, PointerEvent } from 'react';
 
 import {
@@ -162,15 +162,15 @@ const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t 
 const reducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-export function Moon3D({
+export const Moon3D = memo(function Moon3D({
   columns,
-  canAdd,
-  onAdd,
+  selectedSite,
+  onSelect,
   language,
 }: {
   columns: MapColumn[];
-  canAdd: boolean;
-  onAdd: (slug: string) => void;
+  selectedSite?: string;
+  onSelect: (slug: string) => void;
   language: Language;
 }) {
   const t = copy[language];
@@ -411,7 +411,7 @@ export function Moon3D({
             </button>
           );
         }
-        const cls = `marker side-${first.side}${first.cols.length > 0 ? ' used' : ''}`;
+        const cls = `marker side-${first.side}${first.cols.length > 0 ? ' used' : ''}${selectedSite === first.slug ? ' is-selected' : ''}`;
         const label = (
           <span className="marker-label">
             {first.label}
@@ -431,10 +431,13 @@ export function Moon3D({
             type="button"
             className={cls}
             style={style}
-            disabled={!canAdd}
-            onClick={() => onAdd(slug)}
-            aria-label={`${first.title} ${t.addScenario}`}
-            title={canAdd ? `${first.title} ${t.addScenario}` : t.maxScenarios}
+            aria-pressed={selectedSite === slug}
+            onClick={() => {
+              onSelect(slug);
+              animateTo({ q: centerOn(view.q, first.world), zoom: Math.max(2.6, Math.min(MAX_ZOOM, view.zoom * 1.7)) }, 700);
+            }}
+            aria-label={`${first.title} ${t.selectSite}`}
+            title={`${first.title} ${t.selectSite}`}
           >
             {label}
           </button>
@@ -459,4 +462,4 @@ export function Moon3D({
       </div>
     </div>
   );
-}
+});

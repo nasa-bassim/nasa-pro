@@ -1,10 +1,8 @@
 import { fetchRefinement } from './lib/refinement';
 import { comparisonSummary } from './lib/comparison';
 import type { ComparisonColumn } from './lib/comparison';
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, memo, startTransition, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { OptimumStart, Robustness } from './Decision';
-import { IceEvidence } from './IceEvidence';
 import { DATA_RANGE, DAY_MS, clampT0, formatT0Input, parseT0Input, withHorizon } from './lib/ephemeris';
 import { judge } from './lib/robustness';
 import {
@@ -19,12 +17,26 @@ import type { T0Field } from './lib/t0Field';
 import type { Ephemeris } from './lib/ephemeris';
 import { eventMetric, stats, timeline } from './lib/metrics';
 import { tickStepMs } from './lib/timelineTicks';
-import { Moon3D } from './Moon3D';
 import { SITES } from './sites';
 import { copy, duration, eventDuration } from './i18n';
 import type { Language } from './i18n';
 
 const HOUR_MS = 3600_000;
+
+// three.js and the lunar textures stay out of the first application bundle.
+// The map loads after the workspace shell has become interactive.
+const Moon3D = lazy(() => import('./Moon3D').then(({ Moon3D }) => ({ default: Moon3D })));
+const OptimumStart = lazy(() => import('./Decision').then(({ OptimumStart }) => ({ default: OptimumStart })));
+const Robustness = lazy(() => import('./Decision').then(({ Robustness }) => ({ default: Robustness })));
+const IceEvidence = lazy(() => import('./IceEvidence').then(({ IceEvidence }) => ({ default: IceEvidence })));
+
+function MoonLoading({ language }: { language: Language }) {
+  return (
+    <div className="moon moon-loading" role="status" aria-live="polite" aria-label={language === 'ko' ? '3D 달 지도 불러오는 중' : 'Loading 3D Moon map'}>
+      <span>{language === 'ko' ? '3D 달 지도 준비 중' : 'Preparing 3D Moon map'}</span>
+    </div>
+  );
+}
 
 const CUSTOM = 'custom';
 
@@ -34,6 +46,13 @@ interface ColumnSpec {
   t0: string; // datetime-local 값, UTC로 해석한다
   lat?: number; // custom 열에서 적용된 좌표
   lonE?: number;
+}
+
+interface MoonFlight {
+  image: string;
+  from: { left: number; top: number; width: number; height: number };
+  target?: { left: number; top: number; width: number; height: number };
+  launching?: boolean;
 }
 
 // 사전 계산 열은 slug, 직접 입력 열은 좌표가 데이터 캐시 키다.
@@ -116,6 +135,7 @@ function Badge({ label }: { label: string }) {
   return <span className="badge">{label}</span>;
 }
 
+
 // Keep the period's visual feedback separate from the expensive timeline recalculation.
 const PeriodPicker = memo(function PeriodPicker({
   days,
@@ -132,12 +152,12 @@ const PeriodPicker = memo(function PeriodPicker({
   const visualDays = pendingDays ?? days;
   const choose = (nextDays: number) => {
     if (nextDays === visualDays) return;
+    // Commit the selected pill urgently, then let the duration-wide analysis yield to it.
     setPendingDays(nextDays);
-    // Two frames guarantee the selected fill is painted before metrics begin recalculating.
-    requestAnimationFrame(() => requestAnimationFrame(() => {
+    startTransition(() => {
       onChange(nextDays);
       setPendingDays(null);
-    }));
+    });
   };
   return (
     <span className="d-preset" role="group" aria-label={label}>
@@ -321,6 +341,60 @@ function Timelines({
         </g>
       </svg>
     </div>
+  );
+}
+
+
+function LunarPulse({ tl, language }: { tl: Timeline; language: Language }) {
+  const t = copy[language];
+  const both = tl.sun.cells.map((sun, index) => sun && (tl.earth.cells[index] ?? false));
+  const rows = [
+    { label: t.sunVisible, cells: tl.sun.cells, color: 'var(--sunlit)' },
+    { label: t.earthVisible, cells: tl.earth.cells, color: 'var(--earth)' },
+    { label: t.landingWindow, cells: both, color: '#f5f5f7' },
+  ];
+  const W = 640;
+  const labelW = 112;
+  const graphW = W - labelW;
+  const barH = 16;
+  const gap = 12;
+  const h = rows.length * (barH + gap) - gap;
+  const x = (time: number) => ((time - tl.sun.start) / (tl.sun.times[tl.sun.times.length - 1]! + HOUR_MS - tl.sun.start)) * graphW;
+  const runs = (cells: boolean[], times: number[]) => {
+    const result: { start: number; end: number }[] = [];
+    cells.forEach((visible, index) => {
+      if (!visible) return;
+      const time = times[index]!;
+      const last = result[result.length - 1];
+      if (last && last.end === time) last.end = time + HOUR_MS;
+      else result.push({ start: time, end: time + HOUR_MS });
+    });
+    return result;
+  };
+
+  return (
+    <section className="lunar-pulse" aria-labelledby="lunar-pulse-title">
+      <div className="lunar-pulse-head">
+        <div><span>{t.lunarPulse}</span><h2 id="lunar-pulse-title">{t.pulseHelp}</h2></div>
+        <strong>{duration(tl.bothVisibleMs, language)}</strong>
+      </div>
+      <svg viewBox={`0 0 ${W} ${h + 26}`} role="img" aria-label={`${t.lunarPulse}: ${duration(tl.bothVisibleMs, language)}`}>
+        {rows.map((row, index) => {
+          const y = index * (barH + gap);
+          return (
+            <g className="lunar-pulse-row" key={row.label} style={{ '--pulse-delay': `${index * 80}ms` } as React.CSSProperties}>
+              <text x="0" y={y + barH / 2} dominantBaseline="central">{row.label}</text>
+              <rect x={labelW} y={y} width={graphW} height={barH} rx="8" fill="#2c2c2e" />
+              {runs(row.cells, tl.sun.times).map((run) => <rect key={run.start} x={labelW + x(run.start)} y={y} width={x(run.end) - x(run.start)} height={barH} rx="8" fill={row.color} />)}
+            </g>
+          );
+        })}
+        <g className="lunar-pulse-axis">
+          <text x={labelW} y={h + 20} textAnchor="start">{fmtDate(tl.sun.start)}</text>
+          <text x={W} y={h + 20} textAnchor="end">{fmtDate(tl.sun.times[tl.sun.times.length - 1]! + HOUR_MS)}</text>
+        </g>
+      </svg>
+    </section>
   );
 }
 
@@ -639,7 +713,9 @@ function ColumnBody({
           <span style={{ width: `${overlapPercent}%` }} />
         </div>
         <p className="metric-explanation">{t.powerAndContactHelp}</p>
-        <OptimumStart language={language} sun={sun} earth={earth} days={days} currentMs={tl.bothVisibleMs} onApply={onApplyT0} />
+        <Suspense fallback={null}>
+          <OptimumStart language={language} sun={sun} earth={earth} days={days} currentMs={tl.bothVisibleMs} onApply={onApplyT0} />
+        </Suspense>
       </div>
       <div className={`darkness-summary${sunStats.longestDarkHours > 0 ? ' has-darkness' : ''}`}>
         <span>{t.longestDarkness}</span>
@@ -650,8 +726,10 @@ function ColumnBody({
         <div><span>{t.sunlightTime}</span><strong>{Math.round(sunStats.fraction * 100)}%</strong><div className="mini-track"><i style={{width: `${sunStats.fraction * 100}%`, background: 'var(--sunlit)'}} /></div></div>
         <div><span>{t.earthContactTime}</span><strong>{Math.round(earthStats.fraction * 100)}%</strong><div className="mini-track"><i style={{width: `${earthStats.fraction * 100}%`, background: 'var(--earth)'}} /></div></div>
       </div>
-      <Robustness language={language} lat={lat} lonE={lonE} neighbourHorizons={neighbourHorizons} sun={sun} earth={earth} t0={t0} days={days} />
-      <IceEvidence language={language} lat={lat} lonE={lonE} />
+      <Suspense fallback={null}>
+        <Robustness language={language} lat={lat} lonE={lonE} neighbourHorizons={neighbourHorizons} sun={sun} earth={earth} t0={t0} days={days} />
+        <IceEvidence language={language} lat={lat} lonE={lonE} />
+      </Suspense>
       <p className="timeline-heading">{t.timeline} <span>{t.timelineHelp}</span></p>
       <Timelines tl={tl} t0={t0} axisStart={axisStart} axisEnd={axisEnd} language={language} />
       <details className="secondary-metrics">
@@ -692,11 +770,17 @@ export default function App() {
     return saved === 'en' ? 'en' : 'ko';
   });
   const [selectedId, setSelectedId] = useState(DEFAULT_COLUMNS[0]!.id);
+  const [explorationSite, setExplorationSite] = useState<string | null>(null);
+  const [tutorialStep, setTutorialStep] = useState(0);
+  const [isGuideVisible, setGuideVisible] = useState(true);
   const [showComparison, setShowComparison] = useState(false);
   const [workspaceSection, setWorkspaceSection] = useState<'setup' | 'results'>('setup');
   const [view, setView] = useState<'landing' | 'workspace'>(() =>
     window.location.hash === '#workspace' ? 'workspace' : 'landing'
   );
+  const [moonFlight, setMoonFlight] = useState<MoonFlight | null>(null);
+  const landingMoonRef = useRef<HTMLDivElement>(null);
+  const missionMoonRef = useRef<HTMLDivElement>(null);
 
   // 열 제거 버튼이나 예시 복원 버튼이 사라져도 포커스가 body로 떨어지지 않게,
   // 사라진 뒤 옮길 대상(다음/이전 열의 제거 버튼, 복원 버튼, 첫 열 지점 선택)을
@@ -724,8 +808,8 @@ export default function App() {
   }, [columns]);
 
   const needed = useMemo(
-    () => [...new Set(columns.map(columnKey).filter((k): k is string => k !== null))],
-    [columns]
+    () => [...new Set([...columns.map(columnKey).filter((k): k is string => k !== null), ...(explorationSite ? [explorationSite] : [])])],
+    [columns, explorationSite]
   );
   const inflight = useRef<Set<string>>(new Set());
 
@@ -776,18 +860,29 @@ export default function App() {
   }).length;
   const comparisonReady = columns.length >= 2 && readyCount === columns.length;
   const canAdd = columns.length < 4;
-  const addColumn = (site: string) =>
+  const addColumn = useCallback((site: string) =>
     setColumns((c) => {
       if (c.length >= 4) return c;
       const added = { id: nextId++, site, t0: '2026-11-14T00:00' };
       setSelectedId(added.id);
       return [...c, added];
-    });
+    }), []);
+  const ignoreMapAdd = useCallback((_site: string) => undefined, []);
+  const selectExplorationSite = useCallback((site: string) => {
+    setExplorationSite(site);
+    setGuideVisible(false);
+  }, []);
   const selectedIndex = Math.max(0, columns.findIndex((c) => c.id === selectedId));
   const selectedColumn = columns[selectedIndex];
   const selectedKey = selectedColumn ? columnKey(selectedColumn) : null;
   const ko = language === 'ko';
   const text = copy[language];
+  const explorationInfo = explorationSite ? SITES.find((site) => site.slug === explorationSite) : undefined;
+  const explorationRecord = explorationInfo ? data[explorationInfo.slug] : undefined;
+  const explorationStart = explorationInfo ? columns.find((column) => column.site === explorationInfo.slug)?.t0 ?? DEFAULT_COLUMNS[0]!.t0 : undefined;
+  const explorationTimeline = explorationRecord?.status === 'ok' && explorationRecord.sun && explorationRecord.earth && explorationStart
+    ? timeline(explorationRecord.sun, explorationRecord.earth, parseT0Input(explorationStart), days)
+    : undefined;
   const changeLanguage = () => setLanguage((value) => value === 'ko' ? 'en' : 'ko');
   useEffect(() => {
     window.localStorage.setItem('lunar-navigator-language', language);
@@ -800,6 +895,42 @@ export default function App() {
     window.history.pushState({ view: next }, '', hash);
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
+  const launchWorkspace = () => {
+    const canvas = landingMoonRef.current?.querySelector('canvas');
+    if (!canvas || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      navigate('workspace');
+      return;
+    }
+    const r = canvas.getBoundingClientRect();
+    let image: string;
+    try {
+      image = canvas.toDataURL('image/png');
+    } catch {
+      navigate('workspace');
+      return;
+    }
+    const from = { left: r.left, top: r.top, width: r.width, height: r.height };
+    setMoonFlight({ image, from });
+    requestAnimationFrame(() => setMoonFlight((flight) => flight ? { ...flight, launching: true } : flight));
+    window.setTimeout(() => {
+      setView('workspace');
+      setWorkspaceSection('setup');
+      window.history.pushState({ view: 'workspace' }, '', '#workspace');
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      window.setTimeout(() => {
+        const target = missionMoonRef.current?.querySelector<HTMLElement>('.moon')?.getBoundingClientRect();
+        if (!target) {
+          setMoonFlight(null);
+          return;
+        }
+        setMoonFlight((flight) => flight ? {
+          ...flight,
+          target: { left: target.left, top: target.top, width: target.width, height: target.height },
+        } : flight);
+        window.setTimeout(() => setMoonFlight(null), 620);
+      }, 40);
+    }, 240);
+  };
 
   useEffect(() => {
     const onPopState = () => setView(window.location.hash === '#workspace' ? 'workspace' : 'landing');
@@ -809,6 +940,18 @@ export default function App() {
 
   return (
     <>
+      {moonFlight ? <img
+        className={`moon-flight${moonFlight.launching ? ' is-launching' : ''}${moonFlight.target ? ' is-arriving' : ''}`}
+        src={moonFlight.image}
+        alt=""
+        aria-hidden="true"
+        style={{
+          left: moonFlight.target?.left ?? moonFlight.from.left,
+          top: moonFlight.target?.top ?? moonFlight.from.top,
+          width: moonFlight.target?.width ?? moonFlight.from.width,
+          height: moonFlight.target?.height ?? moonFlight.from.height,
+        }}
+      /> : null}
       {view === 'landing' ? (
         <main className="landing-page">
           <nav className="landing-nav" aria-label={text.navigation}>
@@ -824,17 +967,19 @@ export default function App() {
               <h1>{text.landingTitle.split('\n').map((line, index) => <span key={line}>{index > 0 ? <br /> : null}{line}</span>)}</h1>
               <p>{text.landingLead}</p>
               <div className="landing-actions">
-                <button className="landing-primary" onClick={() => navigate('workspace')}>{text.landingCta} <span aria-hidden="true">→</span></button>
+                <button className="landing-primary" onClick={launchWorkspace}>{text.landingCta} <span aria-hidden="true">→</span></button>
               </div>
             </div>
-            <div className="landing-moon-panel">
-              <Moon3D columns={columns} canAdd={false} onAdd={() => undefined} language={language} />
+            <div className="landing-moon-panel" ref={landingMoonRef}>
+              <Suspense fallback={<MoonLoading language={language} />}>
+                <Moon3D columns={columns} selectedSite={undefined} onSelect={ignoreMapAdd} language={language} />
+              </Suspense>
               <div className="landing-moon-caption"><span>{text.landingCaption}</span><span>{text.landingExplore}</span></div>
             </div>
           </section>
         </main>
       ) : (
-        <main className="workspace-page">
+        <main className={`workspace-page${moonFlight ? ' is-moon-handoff' : ''}`}>
           <nav className="workspace-nav" aria-label={text.workspaceNavigation}>
             <button className="workspace-brand" onClick={() => navigate('landing')}><span className="brand-orbit" aria-hidden="true" /> LUNAR NAVIGATOR</button>
             <span className="workspace-label">SCENARIO WORKSPACE</span>
@@ -845,7 +990,7 @@ export default function App() {
             <span aria-hidden="true" />
             <button className={workspaceSection === 'results' ? 'is-active' : ''} aria-pressed={workspaceSection === 'results'} onClick={() => setWorkspaceSection('results')}>{text.resultsKicker}</button>
           </div>
-      {workspaceSection === 'setup' ? <header className="hero">
+      {workspaceSection === 'setup' ? <header className={`hero mission-canvas${explorationInfo ? ' has-exploration' : ''}`}>
         <div className="hero-text">
           <div className="product">
             <div>
@@ -914,10 +1059,42 @@ export default function App() {
             </div>
           </div>
 
-          <aside className="data-note" aria-label={text.dataNote}>{text.dataNote}</aside>
+          <aside className="data-note" aria-label={text.terrainCaveat}>
+            <span>{text.dataSource}</span>
+            <strong>{text.terrainCaveat}</strong>
+          </aside>
           <button className="view-results primary" onClick={() => setWorkspaceSection('results')}>{text.viewResults}</button>
         </div>
-        <Moon3D columns={columns} canAdd={canAdd} onAdd={addColumn} language={language} />
+        <div className="mission-globe" ref={missionMoonRef} aria-label={text.moonTitle}>
+          <Suspense fallback={<MoonLoading language={language} />}>
+            <Moon3D columns={columns} selectedSite={explorationSite ?? undefined} onSelect={selectExplorationSite} language={language} />
+          </Suspense>
+          <div className={`lunar-pulse-stage${explorationInfo ? ' is-open' : ''}`} aria-live="polite">
+            {explorationInfo ? (
+              <>
+                <span>{text.siteInsight}</span><strong>{explorationInfo.name}</strong>
+                {explorationTimeline ? <LunarPulse tl={explorationTimeline} language={language} /> : <p>{text.loadingSiteInsight}</p>}
+              </>
+            ) : <p>{text.selectSiteToExplore}</p>}
+          </div>
+        </div>
+        {!explorationInfo && isGuideVisible ? (
+          <aside className={`mission-guide is-step-${tutorialStep}`} aria-live="polite">
+            <span className="mission-guide-count">{tutorialStep + 1} / 3</span>
+            <h2>{[text.guideRotateTitle, text.guideSelectTitle, text.guideExpandTitle][tutorialStep]}</h2>
+            <p>{[text.guideRotateBody, text.guideSelectBody, text.guideExpandBody][tutorialStep]}</p>
+            <div className="mission-guide-actions">
+              <button type="button" className="mission-guide-skip" onClick={() => setGuideVisible(false)}>{text.guideSkip}</button>
+              <button
+                type="button"
+                className="mission-guide-next"
+                onClick={() => tutorialStep === 2 ? setGuideVisible(false) : setTutorialStep((step) => step + 1)}
+              >
+                {tutorialStep === 2 ? text.guideStart : text.guideNext}
+              </button>
+            </div>
+          </aside>
+        ) : null}
       </header> : <>
 
       <div className="comparison-heading">
@@ -966,14 +1143,17 @@ export default function App() {
           <div className="board-actions"><button onClick={() => setShowComparison((value) => !value)}>{showComparison ? text.backToDetails : text.compareNumbers}</button></div>
           {showComparison ? (
             <div className="comparison-table" role="region" aria-label={text.compareNumbers}>
-              <div className="table-head"><span>{text.tableSite}</span><span>{text.tablePowerContact}</span><span>{text.tableLongestDark}</span></div>
-              {columns.map((c) => {
+              <div className="table-head"><span>{text.tableSite}</span><span>{text.tablePowerContact}</span><span>{text.tableLongestDark}</span><span>{text.tableRecommendation}</span></div>
+              {columns.map((c, index) => {
                 const site = SITES.find((item) => item.slug === c.site);
                 const key = columnKey(c); const record = key ? data[key] : undefined;
-                if (!record?.sun || !record.earth) return <div className="table-row" key={c.id}><strong>{site?.name ?? text.customSite}</strong><span>{text.calculating}</span><span>–</span></div>;
+                const name = site?.name ?? text.customSite;
+                const label = ko ? `${index + 1}번 ${name}` : `#${index + 1} ${name}`;
+                if (!record?.sun || !record?.earth) return <div className="table-row" key={c.id}><strong>{label}</strong><span>{text.calculating}</span><span>–</span><span>–</span></div>;
                 const tl = timeline(record.sun, record.earth, parseT0Input(c.t0), days);
                 const sunStats = stats(record.sun, parseT0Input(c.t0), days);
-                return <button className="table-row" key={c.id} onClick={() => { setSelectedId(c.id); setShowComparison(false); }}><strong>{site?.name ?? text.customSite}</strong><span>{duration(tl.bothVisibleMs, language)}</span><span>{duration(sunStats.longestDarkHours * HOUR_MS, language)}</span></button>;
+                const recommended = comparisonReady && bestNos.has(index + 1);
+                return <button className={`table-row${recommended ? ' is-recommended' : ''}`} key={c.id} onClick={() => { setSelectedId(c.id); setShowComparison(false); }}><strong>{label}</strong><span>{duration(tl.bothVisibleMs, language)}</span><span>{duration(sunStats.longestDarkHours * HOUR_MS, language)}</span><span className={recommended ? 'table-reason is-best' : 'table-reason'}>{recommended ? text.recommendedReason : text.notRecommendedReason}</span></button>;
               })}
             </div>
           ) : selectedColumn ? (
