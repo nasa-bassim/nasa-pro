@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Ephemeris } from './ephemeris';
-import { eventMetric, stats, timeline } from './metrics';
+import { crossings, eventMetric, nextEvent, stats, timeline } from './metrics';
 
 // 커밋된 사전 계산 JSON만 읽는다. 네트워크는 쓰지 않는다.
 const DATA = import.meta.glob('../../public/data/*.json', { eager: true }) as Record<
@@ -116,13 +116,19 @@ describe('수용 기준 7: Apollo 11, D 28일', () => {
   });
 });
 
-describe('첫 화면 (PRD 6): 세 열의 다음 일몰까지', () => {
-  it('17.0일 / 3.0일 / 17.6일로 읽힌다', () => {
+describe('첫 화면: 기본 시각을 바꾸지 않고 실제 다음 이벤트를 표시한다', () => {
+  it('세 번째 열은 아직 일출 직전이며, 직후에는 다음 일몰을 표시한다', () => {
     const sun = eph('im-2_sun');
     const days = (t0: string) => eventMetric(sun, T(`${t0}Z`), 'sun').days!;
     expect(days('2026-11-14T00:00:00')).toBeCloseTo(17.0, 1);
     expect(days('2026-11-28T00:00:00')).toBeCloseTo(3.0, 1);
-    expect(days('2026-12-12T16:17:00')).toBeCloseTo(17.6, 1);
+    const before = eventMetric(sun, T('2026-12-12T16:17:00Z'), 'sun');
+    expect(before.title).toBe('다음 일출까지');
+    expect(before.days! * 86400).toBeGreaterThan(0);
+    expect(before.days! * 86400).toBeLessThan(60);
+    const after = eventMetric(sun, T('2026-12-12T16:18:00Z'), 'sun');
+    expect(after.title).toBe('다음 일몰까지');
+    expect(after.days).toBeCloseTo(17.6, 1);
   });
 });
 
@@ -173,5 +179,63 @@ describe('지형 지평선', () => {
     expect(stats({ ...sun, horizon: flat(3) }, t0, 28).longestDarkHours).toBeGreaterThan(
       stats(sun, t0, 28).longestDarkHours,
     );
+  });
+});
+
+
+describe('다음 이벤트 경계 회귀', () => {
+  it('IM-2 일몰 24초 전의 이벤트를 건너뛰지 않는다', () => {
+    const result = eventMetric(eph('im-2_sun'), T('2026-12-01T00:43:00Z'), 'sun');
+    expect(result.title).toBe('다음 일몰까지');
+    expect(result.eventTime).toBeCloseTo(T('2026-12-01T00:43:24.190Z'), -1);
+  });
+
+  for (const body of ['sun', 'earth'] as const) {
+    for (const height of [0, 2]) {
+      const radius = body === 'sun' ? 0.27 : 0.93;
+      const base = T('2026-11-01T00:00:00Z');
+      const data: Ephemeris = {
+        site: 'boundary', body, lat: 0, lon_e: 0,
+        horizon: height ? Array.from({ length: 360 }, () => height) : undefined,
+        samples: [1, -1, 1, -1].map((f, i) => ({
+          t: new Date(base + i * HOURS).toISOString(), az: 0, el: height + f - radius,
+        })),
+      };
+      it(`${body}, 지평선 ${height}°: 모든 교차 직전·동일 시각·직후`, () => {
+        const events = crossings(data);
+        expect(events).toHaveLength(3);
+        events.forEach((event, i) => {
+          for (const offset of [60_000, 1]) {
+            const before = nextEvent(data, event.t - offset);
+            expect(before.t).toBe(event.t);
+            expect(before.kind).toBe(event.rises ? 'rise' : 'set');
+            expect(before.visibleAtT0).toBe(!event.rises);
+          }
+          for (const offset of [0, 1]) {
+            const after = nextEvent(data, event.t + offset);
+            expect(after.t).toBe(events[i + 1]?.t ?? null);
+            if (events[i + 1]) expect(after.kind).toBe(events[i + 1]!.rises ? 'rise' : 'set');
+          }
+        });
+      });
+    }
+  }
+
+  it('교차가 없는 기간은 현재 가시성을 유지하고 이벤트 없음을 반환한다', () => {
+    const base = eph('apollo-11_earth');
+    const result = nextEvent(base, T('2026-11-14T00:00:00Z'));
+    expect(result).toEqual({ kind: 'set', t: null, visibleAtT0: true });
+  });
+
+  it('정확한 일몰 경계의 가시성은 >= 0 기준을 유지한다', () => {
+    const base = T('2026-11-01T00:00:00Z');
+    const data: Ephemeris = { site: 'edge', body: 'sun', lat: 0, lon_e: 0,
+      samples: [0.73, -1.27, 0.73].map((el, i) => ({
+        t: new Date(base + i * HOURS).toISOString(), az: 0, el,
+      })),
+    };
+    expect(nextEvent(data, base + HOURS / 2)).toEqual({
+      kind: 'rise', t: base + 1.5 * HOURS, visibleAtT0: true,
+    });
   });
 });
